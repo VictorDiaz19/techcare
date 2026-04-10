@@ -1,0 +1,87 @@
+/* --- 1. CONTENEDOR GENERAL --- */
+.clientes-container {
+        padding: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- 2. ENCABEZADO Y BUSCADOR --- */
+.clientes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.clientes-header h1 {
+    color: #1e293b;
+    font-size: 1.8rem;
+}
+
+.header-acciones {
+    display: flex;
+    gap: 15px;
+}
+
+.input-buscador {
+    padding: 10px 15px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    width: 250px;
+    font-size: 0.95rem;
+}
+
+.btn-nuevo-cliente {
+    background-color: #0ea5e9;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-nuevo-cliente:hover {
+    background-color: #0284c7;
+}
+
+/* --- 3. DISEÑO DE LA TABLA --- */
+.tabla-container {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.tabla-clientes {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.tabla-clientes th {
+    background-color: #e2e8f0;
+    padding: 15px;
+    color: #1e293b;
+    font-weight: bold;
+}
+
+.tabla-clientes td {
+    padding: 15px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+
+.tabla-clientes tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.tabla-clientes strong {
+    color: #0f172a;
+}
+
+/* --- 4. COLUMNA DE ACCIONES --- */
+.acciones-celda {
+    display: flex;
+    gap: 10px;
+}

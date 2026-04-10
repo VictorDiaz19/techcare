@@ -1,0 +1,10 @@
+* {
+    margin: 0; /* Quita los margenes por defecto */
+    padding: 0; /* Quita los rellenos por defecto */
+    box-sizing: border-box; /* Eviata que los bordes hagan más ancho los elementos */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8fafc; /* Un gris súper clarito para el fondo general del sistema */
+}

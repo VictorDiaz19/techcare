@@ -1,0 +1,106 @@
+/* --- 1. CONTENEDOR GENERAL --- */
+.inventario-container {
+    padding: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- 2. ENCABEZADO --- */
+.inventario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.inventario-header h1 {
+    color: #1e293b;
+    font-size: 1.8rem;
+}
+
+.btn-nuevo-item {
+    background-color: #0ea5e9;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-nuevo-item:hover { background-color: #0284c7; }
+
+/* --- 3. DISEÑO DE LA TABLA --- */
+.tabla-inventario {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.tabla-inventario th {
+    background-color: #e2e8f0;
+    padding: 15px;
+    color: #1e293b;
+}
+
+.tabla-inventario td {
+    padding: 15px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+
+.tabla-inventario tbody tr:hover { background-color: #f8fafc; }
+
+/* --- 4. ESTILOS DE STOCK Y CATEGORÍAS --- */
+.categoria-pill {
+    background-color: #f1f5f9;
+    color: #475569;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    border: 1px solid #cbd5e1;
+}
+
+.stock-numero {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+}
+
+/* Magia visual: Si está bien, es verde, si falta, es rojo */
+.stock-sano {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.alerta-roja {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    animation: parpadeo 2s infinite; /* Un pequeño efecto de alerta opcional */
+}
+
+/* --- 5. MODAL EXTRA ESTILOS --- */
+.input-select {
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: #f1f5f9;
+    font-size: 1rem;
+}
+
+/* Para poner Stock Actual y Stock Mínimo uno al lado del otro */
+.form-fila-doble {
+    display: flex;
+    gap: 15px;
+}
+.form-fila-doble .form-grupo {
+    flex: 1; /* Hacen que ambos midan el 50% del ancho */
+}
+
+/* --- FIX PARA QUE LOS INPUTS NO SE SALGAN DEL MODAL --- */
+.form-grupo input, 
+.form-grupo select, 
+.form-grupo textarea {
+    width: 100%;
+    box-sizing: border-box; /* Asegura que el borde y padding no sumen tamaño extra */
+}
