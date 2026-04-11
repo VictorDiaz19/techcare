@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Reparaciones from './pages/Reparaciones';
 import Servicios from './pages/Servicios';
 import Clientes from './pages/Clientes';
+import Tecnicos from './pages/Tecnicos';
 import Inventario from './pages/Inventario';
 
 function App(){
@@ -18,7 +19,7 @@ function App(){
         <Route path="/reparaciones" element={<Reparaciones />} />
         <Route path="/servicios" element={<Servicios />} />
         <Route path="/clientes" element={<Clientes />} />
-        {/* Aqui va Tecnicos */}
+        <Route path="/tecnicos" element={<Tecnicos />} />
         <Route path="/inventario" element={<Inventario />} />
       </Routes>
     </BrowserRouter>
