@@ -1,0 +1,60 @@
+/* --- 1. CONTENEDOR GENERAL --- */
+.proveedores-container {
+    padding: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- 2. ENCABEZADO --- */
+.proveedores-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.proveedores-header h1 {
+    color: #1e293b;
+    font-size: 1.8rem;
+}
+
+.btn-nuevo-proveedor {
+    background-color: #0ea5e9;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-nuevo-proveedor:hover { background-color: #0284c7; }
+
+/* --- 3. DISEÑO DE LA TABLA --- */
+.tabla-proveedores {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.tabla-proveedores th {
+    background-color: #e2e8f0;
+    padding: 15px;
+    color: #1e293b;
+}
+
+.tabla-proveedores td {
+    padding: 15px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+
+.tabla-proveedores tbody tr:hover { background-color: #f8fafc; }
+
+/* Detalles para que los contactos se vean bien apilados */
+.info-contacto {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.9rem;
+}

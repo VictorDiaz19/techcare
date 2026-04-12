@@ -8,6 +8,7 @@ import Servicios from './pages/Servicios';
 import Clientes from './pages/Clientes';
 import Tecnicos from './pages/Tecnicos';
 import Inventario from './pages/Inventario';
+import Proveedores from './pages/Proveedores';
 
 function App(){
   return (
@@ -21,6 +22,7 @@ function App(){
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/tecnicos" element={<Tecnicos />} />
         <Route path="/inventario" element={<Inventario />} />
+        <Route path="/proveedores" element={<Proveedores />} />
       </Routes>
     </BrowserRouter>
   );
