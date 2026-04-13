@@ -9,6 +9,7 @@ import Clientes from './pages/Clientes';
 import Tecnicos from './pages/Tecnicos';
 import Inventario from './pages/Inventario';
 import Proveedores from './pages/Proveedores';
+import Cotizaciones from './pages/Cotizaciones';
 
 function App(){
   return (
@@ -23,6 +24,7 @@ function App(){
         <Route path="/tecnicos" element={<Tecnicos />} />
         <Route path="/inventario" element={<Inventario />} />
         <Route path="/proveedores" element={<Proveedores />} />
+        <Route path="/cotizaciones" element={<Cotizaciones />} />
       </Routes>
     </BrowserRouter>
   );

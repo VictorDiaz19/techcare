@@ -1,0 +1,71 @@
+/* --- 1. GENERAL Y ENCABEZADO --- */
+.cotizaciones-container { padding: 30px; max-width: 1200px; margin: 0 auto; }
+.cotizaciones-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.cotizaciones-header h1 { color: #1e293b; font-size: 1.8rem; }
+.btn-nueva-coti { background-color: #0ea5e9; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.btn-nueva-coti:hover { background-color: #0284c7; }
+
+/* --- 2. TABLA PRINCIPAL --- */
+.tabla-cotizaciones { width: 100%; border-collapse: collapse; text-align: left; }
+.tabla-cotizaciones th { background-color: #e2e8f0; padding: 15px; color: #1e293b; }
+.tabla-cotizaciones td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+.estado-coti { background-color: #fef08a; color: #854d0e; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; }
+
+/* --- 3. MODAL DE COTIZACIÓN (EXTRA GRANDE) --- */
+.modal-coti {
+  width: 750px !important; /* Lo hacemos más ancho porque tiene tablas adentro */
+  max-height: 90vh; /* Que no se salga de la pantalla verticalmente */
+  overflow-y: auto; /* Si es muy largo, que tenga scroll interno */
+}
+
+.separador { border: 0; height: 1px; background: #e2e8f0; margin: 20px 0; }
+
+/* --- 4. CONSTRUCTOR DE FILAS --- */
+.caja-agregar-partida {
+    display: flex;
+    gap: 15px;
+    background-color: #f8fafc;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    align-items: flex-end; /* Alinea todo abajo (los inputs y el botón) */
+    margin-bottom: 20px;
+}
+.w-50 { flex: 2; }
+.w-20 { flex: 1; }
+.w-boton { flex: 1; }
+
+.btn-agregar-fila {
+    background-color: #10b981; /* Verde esmeralda */
+    color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer;
+}
+.btn-agregar-fila:hover { background-color: #059669; }
+
+/* --- 5. TABLITA INTERNA DE PARTIDAS --- */
+.tabla-partidas-contenedor {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+.tabla-partidas { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+.tabla-partidas th { background-color: #f1f5f9; padding: 10px; border-bottom: 2px solid #cbd5e1; }
+.tabla-partidas td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+.btn-eliminar-fila { background: none; border: none; cursor: pointer; font-size: 1rem; }
+.text-center { text-align: center; padding: 20px !important; }
+.gris { color: #94a3b8; font-style: italic; }
+
+/* --- 6. ZONA DE TOTALES --- */
+.totales-contenedor {
+    display: flex;
+    justify-content: space-between;
+    background-color: #f8fafc;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+}
+.controles-globales { display: flex; gap: 15px; }
+.resumen-matematico { text-align: right; min-width: 200px; }
+.resumen-matematico p { margin: 5px 0; color: #475569; display: flex; justify-content: space-between; }
+.resumen-matematico h3 { margin: 15px 0 0 0; color: #0f172a; display: flex; justify-content: space-between; border-top: 2px solid #cbd5e1; padding-top: 10px;}
+.rojo { color: #ef4444 !important; }
