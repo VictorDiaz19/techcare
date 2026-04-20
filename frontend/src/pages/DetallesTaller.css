@@ -1,0 +1,208 @@
+/* --- 1. CONTENEDOR GENERAL --- */
+.detalles-container {
+    padding: 30px;
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+.detalles-header h1 {
+    color: #1e293b;
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+}
+
+/* --- 2. GRID PRINCIPAL (Izquierda / Derecha) --- */
+.taller-grid {
+    display: grid;
+    grid-template-columns: 350px 1fr; /* Columna izquierda fija, derecha toma el resto */
+    gap: 25px;
+    align-items: start;
+}
+
+/* =========================================
+    COLUMNA IZQUIERDA: TARJETA DE INFO
+   ========================================= */
+.taller-info-tarjeta {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid #cbd5e1;
+    overflow: hidden;
+}
+
+.info-cabecera {
+    background-color: #bae6fd; /* Azul cielo claro */
+    padding: 20px;
+    text-align: center;
+}
+
+.info-cabecera h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.4rem;
+}
+
+.info-datos {
+    padding: 20px;
+}
+
+.dato-fila {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+}
+
+.dato-fila strong { color: #1e293b; }
+.dato-fila span { color: #475569; text-align: right; }
+
+.diagnostico-ini {
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: none;
+}
+.diagnostico-ini p {
+    margin: 0; color: #64748b; font-size: 0.9rem; line-height: 1.4;
+}
+
+/* Semáforo visual pequeño en la tarjeta */
+.semaforo-actual {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.bolitas-semaforo {
+    background-color: #334155;
+    padding: 5px 10px;
+    border-radius: 20px;
+    display: flex;
+    gap: 5px;
+}
+
+.bolita {
+    width: 15px; height: 15px; border-radius: 50%; opacity: 0.3;
+}
+.bolita.roja { background-color: #ef4444; }
+.bolita.amarilla { background-color: #fde047; opacity: 1; } /* Forzamos activa para ejemplo */
+.bolita.verde { background-color: #22c55e; }
+
+.estado-texto { font-weight: bold; color: #1e293b; }
+
+
+/* =========================================
+    COLUMNA DERECHA: ZONA DE TRABAJO
+   ========================================= */
+.taller-zona-trabajo {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2 columnas iguales */
+    grid-template-rows: auto auto; /* 2 filas que se adaptan al contenido */
+    gap: 20px;
+}
+
+.cuadro-trabajo {
+    background-color: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.cuadro-trabajo h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #0f172a;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 10px;
+}
+
+/* Áreas de texto */
+.cuadro-trabajo textarea {
+    width: 100%;
+    flex-grow: 1; /* Ocupa todo el espacio alto disponible */
+    min-height: 120px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+    background-color: #f8fafc;
+    box-sizing: border-box;
+}
+
+/* Buscador de mini-inventario */
+.buscador-mini {
+    display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 10px; margin-bottom: 15px;
+}
+.buscador-mini input {
+    border: none; padding: 10px; width: 100%; outline: none;
+}
+
+.resultados-mini {
+    border: 1px solid #93c5fd; border-radius: 6px; max-height: 100px; overflow-y: auto; margin-bottom: 15px;
+}
+.item-resultado {
+    padding: 8px 10px; font-size: 0.85rem; cursor: pointer; display: flex; justify-content: space-between;
+}
+.item-resultado:hover { background-color: #eff6ff; }
+.sumar { font-weight: bold; color: #3b82f6; }
+
+/* Lista de refacciones usadas */
+.lista-usadas {
+    flex-grow: 1; border-top: 1px dashed #cbd5e1; padding-top: 15px;
+}
+.item-usado {
+    display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.9rem; color: #334155; border-bottom: 1px solid #f1f5f9;
+}
+.item-usado button {
+    background: none; border: none; cursor: pointer; font-size: 0.8rem;
+}
+.texto-vacio { color: #94a3b8; font-style: italic; font-size: 0.9rem; text-align: center; }
+
+/* Selector de Semáforo Activo */
+.selector-semaforo {
+    background-color: #1e293b; /* Fondo oscuro */
+    padding: 15px 30px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    align-self: center;
+}
+
+.btn-luz {
+    width: 45px; height: 45px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; opacity: 0.4; transition: all 0.2s;
+}
+.btn-luz.roja { background-color: #ef4444; }
+.btn-luz.amarilla { background-color: #eab308; }
+.btn-luz.verde { background-color: #22c55e; }
+
+/* Efecto cuando lo seleccionas (Se prende la luz) */
+.btn-luz.seleccionado {
+    opacity: 1; border-color: white; box-shadow: 0 0 15px currentColor;
+}
+
+.texto-semaforo-cambio p { margin: 5px 0; color: #475569; font-size: 0.95rem; }
+
+/* Botones Finales */
+.panel-guardar {
+    justify-content: space-between;
+}
+.botones-accion-taller {
+    display: flex; gap: 10px; margin-top: 15px;
+}
+.btn-guardar-taller {
+    background-color: #0ea5e9; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; flex: 2; cursor: pointer;
+}
+.btn-cancelar-taller {
+    background-color: #94a3b8; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; flex: 1; cursor: pointer;
+}

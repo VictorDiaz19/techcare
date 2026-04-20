@@ -10,6 +10,7 @@ import Tecnicos from './pages/Tecnicos';
 import Inventario from './pages/Inventario';
 import Proveedores from './pages/Proveedores';
 import Cotizaciones from './pages/Cotizaciones';
+import DetallesTaller from './pages/DetallesTaller';
 
 function App(){
   return (
@@ -25,6 +26,7 @@ function App(){
         <Route path="/inventario" element={<Inventario />} />
         <Route path="/proveedores" element={<Proveedores />} />
         <Route path="/cotizaciones" element={<Cotizaciones />} />
+        <Route path="/detalles/:folio" element={<DetallesTaller />} />
       </Routes>
     </BrowserRouter>
   );

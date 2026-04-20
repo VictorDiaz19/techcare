@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Reparaciones.css';
 
 function Reparaciones() {
+    // ACTIVAR EL VOLANTE DE REACT
+    const navigate = useNavigate();
+
     // 1. ESTADO DE LA TABLA
     const [ordenes, setOrdenes] = useState([
         { folio: 1024, fecha: '08/03/2026 10:30', equipo: 'HP Pavilion', problema: 'No enciende', estado: 'En proceso', costo: 0 },
@@ -94,6 +98,11 @@ function Reparaciones() {
         }
     };
 
+    // 3. NUEVA FUNCIÓN PARA IR A DETALLES
+    const irADetalles = (folio) => {
+        navigate(`/detalles/${folio}`);
+    };
+
     return (
         <div className="reparaciones-container">
         
@@ -133,7 +142,7 @@ function Reparaciones() {
                     
                     {/* NUEVA COLUMNA DE ACCIONES */}
                     <td className="acciones-celda">
-                    <button className="btn-ver-detalles" title="Ver Detalles">👁️</button>
+                    <button className="btn-ver-detalles" title="Ver Detalles" onClick={() => irADetalles(orden.folio)}>👁️</button>
                     {/* Botón de Editar le pasamos TODA la orden para que llene el formulario */}
                     <button className="btn-editar" title="Editar" onClick={() => abrirModalEditar(orden)}>✏️</button>
                     {/* Botón de Eliminar le pasamos solo el folio para buscarlo y borrarlo */}
