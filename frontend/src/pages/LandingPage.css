@@ -1,0 +1,102 @@
+/* --- CONTENEDOR PRINCIPAL --- */
+.landing-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #1e293b;
+    background-color: #f8fafc;
+    min-height: 100vh;
+}
+
+/* --- NAVEGACIÓN PÚBLICA --- */
+.landing-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 50px;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.landing-logo {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+.landing-logo span { color: #0ea5e9; }
+
+.btn-acceso-admin {
+    background: none;
+    border: 1px solid #cbd5e1;
+    color: #64748b;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+.btn-acceso-admin:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+/* --- HERO SECTION --- */
+.landing-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 60px 50px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.hero-texto { flex: 1; padding-right: 40px; }
+.hero-texto h1 { font-size: 3rem; line-height: 1.2; margin-bottom: 20px; color: #0f172a; }
+.hero-texto p { font-size: 1.2rem; color: #475569; margin-bottom: 30px; line-height: 1.6; }
+
+.btn-hero-cta {
+    background-color: #0ea5e9;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.btn-hero-cta:hover { background-color: #0284c7; }
+
+.hero-imagen { flex: 1; text-align: right; }
+.hero-imagen img { width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+
+/* --- FEATURES SECTION --- */
+.landing-features {
+    display: flex;
+    gap: 30px;
+    padding: 50px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.feature-card {
+    flex: 1;
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    text-align: center;
+}
+.feature-card h3 { color: #0ea5e9; margin-bottom: 15px; font-size: 1.3rem; }
+.feature-card p { color: #64748b; line-height: 1.5; }
+
+/* --- LOGIN MODAL EXTRA --- */
+.login-modal { max-width: 400px; position: relative; }
+.btn-cerrar-login {
+    position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #94a3b8;
+}
+.login-sub { color: #64748b; margin-bottom: 20px; margin-top: -10px; }
+.mensaje-error {
+    background-color: #fef2f2; color: #b91c1c; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; text-align: center; border: 1px solid #fca5a5;
+}
+.btn-login-submit {
+    width: 100%; background-color: #10b981; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 10px;
+}
+.btn-login-submit:hover { background-color: #059669; }
+.login-pista { text-align: center; font-size: 0.8rem; color: #cbd5e1; margin-top: 20px; }

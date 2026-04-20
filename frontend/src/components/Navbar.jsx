@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom'; // Sirve para navegar entre pantallas sin que la página parpadee
 import './Navbar.css'; // Importamos el archivo de diseño
 
-function Navbar() {
+function Navbar({ onLogout }) {
     // Creamos el estado del menú
     const [menuAbierto, setMenuAbierto] = useState(false);
 
@@ -41,7 +41,7 @@ function Navbar() {
             {/* 3. SECCIÓN DE USUARIO */}
             <div className='navbar-user'>
                 <span>Edwin - Admin</span>
-                <button className='btn-logout'>Cerrar Sesión</button>
+                <button className='btn-logout' onClick={onLogout}>Cerrar Sesión</button>
             </div>
         </nav>
     );
