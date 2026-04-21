@@ -1,137 +1,151 @@
-/* Resumen operativo */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 
 function Dashboard() {
-    // 1. DATOS DE ALERTAS (Simulando lo que vendrá de la tabla Inventario)
-    const [alertasInventario, /*setAlertasInventario*/] = useState(3);
-
-    // 2. DATOS DE KIPs SUPERIORES (Simulando consultas totales)
-    const [kpis, /*setKpis*/] = useState({
-        equiposRecibidos: 24,
-        serviciosCompletados: 18,
-        ingresosTotales: 35500,
-        tiempoPromedio: 3.2
+    // 1. ESTADOS PARA LOS DATOS REALES
+    const [stats, setStats] = useState({
+        totalClientes: 0,
+        totalProveedores: 0,
+        totalReparaciones: 0,
+        totalCotizaciones: 0,
+        totalServicios: 0,
+        totalInventario: 0
     });
 
-    // 3. LISTAS DE EQUIPOS (Simulando un SELECT a la tabla de Reparaciones)
-    const [equiposUrgentes, /*setEquiposUrgentes*/] = useState([
-        { folio: 1024, equipo: 'Laptop HP', cliente: 'Victor', estado: 'Retrasado'},
-        { folio: 1028, equipo: 'iPhone', cliente: 'Ana', estado: 'Esperando Refacción'},
-        { folio: 1030, equipo: 'Tablet', cliente: 'Luis', estado: 'Grave'}
-    ]);
+    const [equiposUrgentes, setEquiposUrgentes] = useState([]);
+    const [equiposEnProceso, setEquiposEnProceso] = useState([]);
+    const [equiposListos, setEquiposListos] = useState([]);
+    const [cargando, setCargando] = useState(true);
 
-    const [equiposEnProceso, /*setEquiposEnProceso*/] = useState ([
-        { folio: 1025, equipo: 'Xbox', cliente: 'Carlos', estado: 'En Diagnóstico'},
-        { folio: 1027, equipo: 'Dell PC', cliente: 'María', estado: 'En Reparación'},
-        { folio: 1029, equipo: 'Samsung S21', cliente: 'José', estado: 'Esperando Refacción'},
-    ]);
+    const API_BASE = "http://localhost:8082";
 
-    const [equiposListos, /*setEquiposListos*/] = useState ([
-        { folio: 1020, equipo: 'iPad Air', cliente: 'Elena', estado: 'Terminado' },
-        { folio: 1023, equipo: 'Mando', cliente: 'Pedro', estado: 'Terminado' },
-        { folio: 1026, equipo: 'Macbook', cliente: 'Sofía', estado: 'Terminado' }
-    ]);
+    // 2. CARGA DINÁMICA DE DATOS
+    useEffect(() => {
+        const cargarDashboard = async () => {
+            try {
+                const resStats = await fetch(`${API_BASE}/dashboard/stats`);
+                if (resStats.ok) setStats(await resStats.json());
 
-    // --- HTML ---
+                const resRep = await fetch(`${API_BASE}/reparaciones`);
+                if (resRep.ok) {
+                    const reparaciones = await resRep.json();
+                    setEquiposUrgentes(reparaciones.filter(r => r.estadoActual === 'En espera'));
+                    setEquiposEnProceso(reparaciones.filter(r => r.estadoActual === 'En proceso'));
+                    setEquiposListos(reparaciones.filter(r => r.estadoActual === 'Terminado'));
+                }
+            } catch (error) {
+                console.error("Error al conectar con el servidor:", error);
+            } finally {
+                setCargando(false);
+            }
+        };
+        cargarDashboard();
+    }, []);
+
+    // 3. FUNCIÓN PARA DESCARGAR REPORTE PDF
+    const descargarReporteProductividad = () => {
+        const fechaActual = new Date();
+        const mes = fechaActual.getMonth() + 1; // JS meses son 0-11
+        const anio = fechaActual.getFullYear();
+        
+        // Abrimos el PDF en una nueva pestaña para descarga directa
+        window.open(`${API_BASE}/pdf/reportes/productividad?mes=${mes}&anio=${anio}`, '_blank');
+    };
+
     return (
         <div className="dashboard-container">
-            {/* --- BANNER DE ALERTA (Solo se muestra si hay más de 0 alertas) --- */}
-            {alertasInventario > 0 && (
+            {stats.totalInventario < 5 && stats.totalInventario > 0 && (
                 <div className="banner-alerta">
-                    <p>🔔 <strong>ALERTA DE INVENTARIO:</strong> {alertasInventario} productos con stock bajo (Ver inventario)</p>
+                    <p>🔔 <strong>ALERTA:</strong> El inventario global es bajo ({stats.totalInventario} piezas). Revisa tus existencias.</p>
                 </div>
             )}
 
-            {/* --- ENCABEZADO --- */}
             <header className="dashboard-header">
-                <h1>RESUMEN OPERATIVO - MARZO 2026</h1>
+                <h1>PANEL DE CONTROL TECHCARE</h1>
+                <p>Resumen operativo en tiempo real</p>
             </header>
 
-            {/* --- 4 KPIs SUPERIORES (Usando las variables del estado kpis) --- */}
             <section className="kpis-superiores">
                 <div className="kpi-mini-card">
-                    <p>Equipos Recibidos (Mes)</p>
-                    <h3>{kpis.equiposRecibidos}</h3>
+                    <p>Clientes Registrados</p>
+                    <h3>{stats.totalClientes}</h3>
                 </div>
                 <div className="kpi-mini-card">
-                    <p>Servicios completados</p>
-                    <h3>{kpis.serviciosCompletados}</h3>
+                    <p>Órdenes de Reparación</p>
+                    <h3>{stats.totalReparaciones}</h3>
                 </div>
                 <div className="kpi-mini-card">
-                    <p>Ingresos totales (Mes)</p>
-                    <h3>${kpis.ingresosTotales.toLocaleString()} MXN</h3>
+                    <p>Servicios en Catálogo</p>
+                    <h3>{stats.totalServicios}</h3>
                 </div>
                 <div className="kpi-mini-card">
-                    <p>Tiempo Promedio Reparación</p>
-                    <h3>{kpis.tiempoPromedio} días</h3>
+                    <p>Proveedores Activos</p>
+                    <h3>{stats.totalProveedores}</h3>
                 </div>
             </section>
 
-            {/* --- LAS 3 COLUMNAS DEL SEMÁFORO */}
             <section className="semaforo-columnas">
-
-                {/* COLUMNA ROJA */}
                 <div className="columna-card roja">
-                    <h2 className="columna-titulo">URGENTE / RETRASADO</h2>
+                    <h2 className="columna-titulo">URGENTE / EN ESPERA</h2>
                     <p className="columna-sub">({equiposUrgentes.length} equipos)</p>
-
-                    {/* Aquí usamos .map() para imprimir la lista dinámica */}
                     <div className="lista-equipos">
-                        {equiposUrgentes.map(item => (
-                            <div key={item.folio} className="equipo-item">
+                        {equiposUrgentes.map(o => (
+                            <div key={o.idReparacion} className="equipo-item">
                                 <div className="equipo-info">
-                                    <strong>{item.folio} - {item.equipo}</strong>
-                                    <span>{item.cliente}</span>
+                                    <strong>REP-{String(o.idReparacion).padStart(4, '0')}</strong>
+                                    <span>{o.equipo}</span>
                                 </div>
-                                <div className="equipo-estado">{item.estado}</div>
                             </div>
                         ))}
                     </div>
-                    <button className="btn-detalles">Ver Detalles</button>
                 </div>
 
-                {/* COLUMNA AMARILLA */}
                 <div className="columna-card amarilla">
-                    <h2 className="columna-titulo">EN PROCESO</h2>
+                    <h2 className="columna-titulo">EN TRABAJO</h2>
                     <p className="columna-sub">({equiposEnProceso.length} equipos)</p>
-
                     <div className="lista-equipos">
-                        {equiposEnProceso.map(item => (
-                            <div key={item.folio} className="equipo-item">
+                        {equiposEnProceso.map(o => (
+                            <div key={o.idReparacion} className="equipo-item">
                                 <div className="equipo-info">
-                                    <strong>{item.folio} - {item.equipo}</strong>
-                                    <span>{item.cliente}</span>
+                                    <strong>REP-{String(o.idReparacion).padStart(4, '0')}</strong>
+                                    <span>{o.equipo}</span>
                                 </div>
-                                <div className="equipo-estado">{item.estado}</div>
                             </div>
                         ))}
                     </div>
-                    <button className="btn-detalles">Ver Detalles</button>
                 </div>
 
-                {/* COLUMNA VERDE */}
                 <div className="columna-card verde">
                     <h2 className="columna-titulo">LISTO PARA ENTREGA</h2>
                     <p className="columna-sub">({equiposListos.length} equipos)</p>
-
                     <div className="lista-equipos">
-                        {equiposListos.map(item => (
-                            <div key={item.folio} className="equipo-item">
+                        {equiposListos.map(o => (
+                            <div key={o.idReparacion} className="equipo-item">
                                 <div className="equipo-info">
-                                    <strong>{item.folio} - {item.equipo}</strong>
-                                    <span>{item.cliente}</span>
+                                    <strong>REP-{String(o.idReparacion).padStart(4, '0')}</strong>
+                                    <span>{o.equipo}</span>
                                 </div>
-                                <div className="equipo-estado">{item.estado}</div>
                             </div>
                         ))}
                     </div>
-                    <button className="btn-detalles">Ver Detalles</button>
+                </div>
+            </section>
+
+            {/* --- ACCIONES RÁPIDAS (VINCULADO AL PDF) --- */}
+            <section className="dashboard-acciones-rapidas" style={{marginTop:'30px'}}>
+                <h2 style={{fontSize:'1.5rem', color:'#2c3e50', marginBottom:'15px'}}>Reportes y Administración</h2>
+                <div style={{display:'flex', gap:'15px'}}>
+                    <button 
+                        className="btn-nuevo-cliente" 
+                        onClick={descargarReporteProductividad}
+                        style={{background:'#e67e22', border:'none', padding:'12px 20px'}}
+                    >
+                        📊 GENERAR REPORTE PDF (PRODUCTIVIDAD)
+                    </button>
                 </div>
             </section>
         </div>
     );
 }
-
 
 export default Dashboard;

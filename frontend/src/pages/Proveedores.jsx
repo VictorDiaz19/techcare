@@ -4,6 +4,8 @@ import './Proveedores.css';
 function Proveedores() {
     const [proveedores, setProveedores] = useState([]);
     const [cargando, setCargando] = useState(true);
+    const [busqueda, setBusqueda] = useState("");
+
     const API_URL = "http://localhost:8082/proveedores";
 
     useEffect(() => {
@@ -18,7 +20,7 @@ function Proveedores() {
                 setProveedores(Array.isArray(datos) ? datos : []);
             }
         } catch (error) {
-            console.error("Error al cargar proveedores:", error);
+            console.error("Error:", error);
         } finally {
             setCargando(false);
         }
@@ -26,7 +28,7 @@ function Proveedores() {
 
     const [modalAbierto, setModalAbierto] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
-    const [proveedorEditandoId, setProveedorEditandoId] = useState(null);
+    const [idEditando, setIdEditando] = useState(null);
 
     const [formulario, setFormulario] = useState({
         empresa: '',
@@ -49,7 +51,7 @@ function Proveedores() {
 
     const abrirModalEditar = (p) => {
         setModoEdicion(true);
-        setProveedorEditandoId(p.idProveedor);
+        setIdEditando(p.idProveedor);
         setFormulario({
             empresa: p.empresa,
             nombreContacto: p.nombreContacto || '',
@@ -61,73 +63,75 @@ function Proveedores() {
         setModalAbierto(true);
     };
 
-    const eliminarProveedor = async (id) => {
-        if (window.confirm("¿Eliminar este proveedor?")) {
-            try {
-                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-                if (res.ok) cargarProveedores();
-            } catch (error) { console.error(error); }
-        }
-    };
-
     const guardarProveedor = async () => {
         try {
             const metodo = modoEdicion ? 'PUT' : 'POST';
-            const url = modoEdicion ? `${API_URL}/${proveedorEditandoId}` : API_URL;
+            const url = modoEdicion ? `${API_URL}/${idEditando}` : API_URL;
             const res = await fetch(url, {
                 method: metodo,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formulario)
             });
             if (res.ok) {
-                cargarProveedores();
+                await cargarProveedores();
                 setModalAbierto(false);
             }
         } catch (error) { console.error(error); }
     };
+
+    const eliminarProveedor = async (id) => {
+        if (window.confirm("¿Eliminar?")) {
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            cargarProveedores();
+        }
+    };
+
+    const filtrados = proveedores.filter(p => 
+        (p.empresa || "").toLowerCase().includes(busqueda.toLowerCase())
+    );
 
     return (
         <div className="proveedores-container">
             <div className="proveedores-header">
                 <h1>DIRECTORIO DE PROVEEDORES</h1>
                 <div className="header-acciones">
-                    <input type="text" placeholder="Buscar empresa..." className="input-buscador" />
+                    <input type="text" placeholder="Buscar empresa..." className="input-buscador" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
                     <button className="btn-nuevo-proveedor" onClick={abrirModalCrear}>+ NUEVO PROVEEDOR</button>
                 </div>
             </div>
 
             <div className="tabla-container">
-                {cargando ? <p style={{textAlign:'center'}}>Cargando proveedores...</p> : (
+                {cargando ? <p style={{textAlign:'center'}}>Cargando...</p> : (
                     <table className="tabla-proveedores">
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Empresa / Razón Social</th>
-                                <th>Contacto</th>
-                                <th>Tipo de Insumos</th>
-                                <th>Tiempo de Entrega</th>
+                                <th>Empresa</th>
+                                <th>Persona de Contacto</th>
+                                <th>Categoría</th>
+                                <th>Teléfono / Email</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {proveedores.length > 0 ? proveedores.map((p) => (
+                            {filtrados.map(p => (
                                 <tr key={p.idProveedor}>
                                     <td>{p.idProveedor}</td>
                                     <td><strong>{p.empresa}</strong></td>
+                                    <td>{p.nombreContacto || 'N/A'}</td>
+                                    <td><span className="categoria-pill">{p.categoria || 'Gral'}</span></td>
                                     <td>
-                                        <div className="info-contacto">
-                                            <span>📞 {p.telefonoContacto}</span>
-                                            <span>✉️ {p.emailProveedor}</span>
+                                        <div style={{fontSize: '0.85em'}}>
+                                            📞 {p.telefonoContacto}<br/>
+                                            ✉️ {p.emailProveedor}
                                         </div>
                                     </td>
-                                    <td><span className="categoria-pill">{p.categoria}</span></td>
-                                    <td>⏱️ {p.tiempoEntrega}</td>
                                     <td className="acciones-celda">
                                         <button className="btn-editar" onClick={() => abrirModalEditar(p)}>✏️</button>
                                         <button className="btn-eliminar" onClick={() => eliminarProveedor(p.idProveedor)}>🗑️</button>
                                     </td>
                                 </tr>
-                            )) : <tr><td colSpan="6" style={{textAlign:'center'}}>No hay proveedores registrados.</td></tr>}
+                            ))}
                         </tbody>
                     </table>
                 )}
@@ -143,6 +147,16 @@ function Proveedores() {
                         </div>
                         <div className="form-fila-doble">
                             <div className="form-grupo">
+                                <label>Persona de Contacto:</label>
+                                <input type="text" name="nombreContacto" value={formulario.nombreContacto} onChange={manejarInput} />
+                            </div>
+                            <div className="form-grupo">
+                                <label>Categoría:</label>
+                                <input type="text" name="categoria" value={formulario.categoria} onChange={manejarInput} />
+                            </div>
+                        </div>
+                        <div className="form-fila-doble">
+                            <div className="form-grupo">
                                 <label>Teléfono:</label>
                                 <input type="text" name="telefonoContacto" value={formulario.telefonoContacto} onChange={manejarInput} />
                             </div>
@@ -151,22 +165,8 @@ function Proveedores() {
                                 <input type="email" name="emailProveedor" value={formulario.emailProveedor} onChange={manejarInput} />
                             </div>
                         </div>
-                        <div className="form-grupo">
-                            <label>Categoría:</label>
-                            <select name="categoria" value={formulario.categoria} onChange={manejarInput} className="input-select">
-                                <option value="">Seleccione...</option>
-                                <option value="General">General</option>
-                                <option value="Pantallas">Pantallas</option>
-                                <option value="Baterías">Baterías</option>
-                                <option value="Consumibles">Consumibles</option>
-                            </select>
-                        </div>
-                        <div className="form-grupo">
-                            <label>Tiempo Entrega:</label>
-                            <input type="text" name="tiempoEntrega" value={formulario.tiempoEntrega} onChange={manejarInput} />
-                        </div>
                         <div className="modal-botones">
-                            <button className="btn-guardar" onClick={guardarProveedor}>Guardar Proveedor</button>
+                            <button className="btn-guardar" onClick={guardarProveedor}>Guardar</button>
                             <button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button>
                         </div>
                     </div>

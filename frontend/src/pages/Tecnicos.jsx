@@ -2,40 +2,44 @@ import React, { useState, useEffect } from 'react';
 import './Tecnicos.css';
 
 function Tecnicos() {
+    // 1. ESTADO DE LA TABLA (Conectada al Backend)
     const [tecnicos, setTecnicos] = useState([]);
     const [cargando, setCargando] = useState(true);
+    const [busqueda, setBusqueda] = useState("");
+    const [errorConexion, setErrorConexion] = useState(null);
+
     const API_URL = "http://localhost:8082/tecnicos";
 
+    // 2. CARGA DE DATOS AL INICIAR
     useEffect(() => {
         cargarTecnicos();
     }, []);
 
     const cargarTecnicos = async () => {
+        setCargando(true);
         try {
             const respuesta = await fetch(API_URL);
             if (respuesta.ok) {
                 const datos = await respuesta.json();
-                // MAPEO DEFENSIVO: Buscamos cualquier variante del nombre del campo
-                const formateados = Array.isArray(datos) ? datos.map(t => ({
-                    idReal: t.idTecnicos || t.ID_tecnicos || t.id_tecnicos,
-                    nombreReal: t.nombreTecnico || t.NombreTecnico || t.nombre_tecnico,
-                    especialidadReal: t.especialidad || t.Especialidad,
-                    telefonoReal: t.telefono || t.Telefono || '',
-                    estadoReal: t.estado || t.Estado || 'Activo'
-                })) : [];
-                setTecnicos(formateados);
+                setTecnicos(Array.isArray(datos) ? datos : []);
+                setErrorConexion(null);
+            } else {
+                setErrorConexion("Error del servidor (Status: " + respuesta.status + ")");
             }
         } catch (error) {
             console.error("Error al cargar técnicos:", error);
+            setErrorConexion("No se pudo conectar al Backend.");
         } finally {
             setCargando(false);
         }
     };
 
+    // 3. ESTADOS DEL MODAL Y FORMULARIO
     const [modalAbierto, setModalAbierto] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
-    const [tecnicoEditandoId, setTecnicoEditandoId] = useState(null);
+    const [idEditando, setIdEditando] = useState(null);
 
+    // Mapeo exacto con los nombres de Java (GestionTecnicos.java)
     const [formulario, setFormulario] = useState({
         nombreTecnico: '',
         especialidad: '',
@@ -47,61 +51,120 @@ function Tecnicos() {
         setFormulario({ ...formulario, [e.target.name]: e.target.value });
     };
 
+    // 4. FUNCIONES CRUD
     const abrirModalCrear = () => {
         setModoEdicion(false);
+        setIdEditando(null);
         setFormulario({ nombreTecnico: '', especialidad: '', telefono: '', estado: 'Activo' });
         setModalAbierto(true);
     };
 
-    const abrirModalEditar = (tecnico) => {
+    const abrirModalEditar = (t) => {
         setModoEdicion(true);
-        setTecnicoEditandoId(tecnico.idReal);
+        setIdEditando(t.idTecnicos); // Nombre exacto de la base de datos
         setFormulario({
-            nombreTecnico: tecnico.nombreReal,
-            especialidad: tecnico.especialidadReal,
-            telefono: tecnico.telefonoReal,
-            estado: tecnico.estadoReal
+            nombreTecnico: t.nombreTecnico || '',
+            especialidad: t.especialidad || '',
+            telefono: t.telefono || '',
+            estado: t.estado || 'Activo'
         });
         setModalAbierto(true);
     };
 
-    const eliminarTecnico = async (id) => {
-        if (window.confirm("¿Estás seguro de eliminar este técnico?")) {
-            try {
-                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-                if (res.ok) cargarTecnicos();
-            } catch (error) { console.error(error); }
-        }
-    };
-
     const guardarTecnico = async () => {
+        if (!formulario.nombreTecnico) {
+            alert("El nombre completo es obligatorio.");
+            return;
+        }
+
         try {
             const metodo = modoEdicion ? 'PUT' : 'POST';
-            const url = modoEdicion ? `${API_URL}/${tecnicoEditandoId}` : API_URL;
+            const url = modoEdicion ? `${API_URL}/${idEditando}` : API_URL;
+            
+            const payload = {
+                nombreTecnico: formulario.nombreTecnico,
+                especialidad: formulario.especialidad,
+                telefono: formulario.telefono,
+                estado: formulario.estado
+            };
+
+            // En edición, por seguridad enviamos también el ID
+            if (modoEdicion) {
+                payload.idTecnicos = idEditando;
+            }
+
             const res = await fetch(url, {
                 method: metodo,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formulario)
+                body: JSON.stringify(payload)
             });
+
             if (res.ok) {
-                cargarTecnicos();
+                await cargarTecnicos();
                 setModalAbierto(false);
+            } else {
+                const errorTexto = await res.text();
+                alert("Error al guardar el técnico en el servidor: " + errorTexto);
             }
-        } catch (error) { console.error(error); }
+        } catch (error) {
+            console.error("Error de conexión:", error);
+        }
     };
+
+    const eliminarTecnico = async (id) => {
+        if (window.confirm("¿Estás seguro de que deseas eliminar este técnico permanentemente?")) {
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    cargarTecnicos();
+                }
+            } catch (error) {
+                console.error("Error al eliminar:", error);
+            }
+        }
+    };
+
+    // 5. FILTRADO PARA BÚSQUEDA
+    const tecnicosFiltrados = tecnicos.filter(t => {
+        const busquedaNormalizada = busqueda.toLowerCase().trim();
+        const nombreTexto = (t.nombreTecnico || "").toLowerCase();
+        const idTexto = String(t.idTecnicos || "");
+        
+        return nombreTexto.includes(busquedaNormalizada) || idTexto.includes(busquedaNormalizada);
+    });
 
     return (
         <div className="tecnicos-container">
+        
+            {/* --- BARRA SUPERIOR CON BÚSQUEDA --- */}
             <div className="tecnicos-header">
                 <h1>TÉCNICOS</h1>
                 <div className="header-acciones">
-                    <input type="text" placeholder="Buscar técnico..." className="input-buscador"/>
-                    <button className="btn-nuevo-tecnico" onClick={abrirModalCrear}>+ NUEVO TÉCNICO</button>
+                    <input 
+                        type="text" 
+                        placeholder="Buscar por nombre o ID..." 
+                        className="input-buscador"
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                    />
+                    <button className="btn-nuevo-tecnico" onClick={abrirModalCrear}>
+                        + NUEVO TÉCNICO
+                    </button>
+                    <button className="btn-refrescar" onClick={cargarTecnicos} title="Actualizar Datos">🔄</button>
                 </div>
             </div>
 
+            {errorConexion && (
+                <div className="error-mensaje" style={{color: 'red', textAlign: 'center', marginBottom: '10px'}}>
+                    ⚠️ {errorConexion}
+                </div>
+            )}
+
+            {/* --- TABLA DE DATOS --- */}
             <div className="tabla-container">
-                {cargando ? <p style={{textAlign:'center'}}>Conectando con el servidor...</p> : (
+                {cargando ? (
+                    <p style={{textAlign: 'center', padding: '20px'}}>Conectando con la base de datos...</p>
+                ) : (
                     <table className="tabla-tecnicos">
                         <thead>
                             <tr>
@@ -114,23 +177,32 @@ function Tecnicos() {
                             </tr>
                         </thead>
                         <tbody>
-                            {tecnicos.length > 0 ? tecnicos.map((t) => (
-                                <tr key={t.idReal}>
-                                    <td>{t.idReal}</td>
-                                    <td><strong>{t.nombreReal}</strong></td>
-                                    <td>{t.especialidadReal}</td>
-                                    <td>{t.telefonoReal}</td>
-                                    <td>
-                                        <span className={`estado-pill ${t.estadoReal === 'Activo' ? 'pill-activo' : 'pill-inactivo'}`}>
-                                            {t.estadoReal}
-                                        </span>
-                                    </td>
-                                    <td className="acciones-celda">
-                                        <button className="btn-editar" onClick={() => abrirModalEditar(t)}>✏️</button>
-                                        <button className="btn-eliminar" onClick={() => eliminarTecnico(t.idReal)}>🗑️</button>
+                            {tecnicosFiltrados.length > 0 ? (
+                                tecnicosFiltrados.map((t) => (
+                                    <tr key={t.idTecnicos}>
+                                        {/* CORRECCIÓN CRÍTICA: Usamos los nombres exactos del Backend */}
+                                        <td>{t.idTecnicos}</td>
+                                        <td><strong>{t.nombreTecnico}</strong></td>
+                                        <td>{t.especialidad || 'N/A'}</td>
+                                        <td>{t.telefono || 'N/A'}</td>
+                                        <td>
+                                            <span className={`estado-pill ${t.estado === 'Activo' ? 'pill-activo' : 'pill-inactivo'}`}>
+                                                {t.estado || 'Activo'}
+                                            </span>
+                                        </td>
+                                        <td className="acciones-celda">
+                                            <button className="btn-editar" title="Editar" onClick={() => abrirModalEditar(t)}>✏️</button>
+                                            <button className="btn-eliminar" title="Eliminar" onClick={() => eliminarTecnico(t.idTecnicos)}>🗑️</button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" style={{textAlign: 'center', padding: '30px'}}>
+                                        No se encontraron técnicos registrados.
                                     </td>
                                 </tr>
-                            )) : <tr><td colSpan="6" style={{textAlign:'center'}}>No hay técnicos registrados en la base de datos.</td></tr>}
+                            )}
                         </tbody>
                     </table>
                 )}
@@ -141,25 +213,30 @@ function Tecnicos() {
                 <div className="modal-overlay">
                     <div className="modal-content">
                         <h2>{modoEdicion ? 'ACTUALIZAR TÉCNICO' : 'NUEVO TÉCNICO'}</h2>
+                        
                         <div className="form-grupo">
                             <label>Nombre Completo:</label>
-                            <input type="text" name="nombreTecnico" value={formulario.nombreTecnico} onChange={manejarInput} />
+                            <input type="text" name="nombreTecnico" value={formulario.nombreTecnico} onChange={manejarInput} placeholder="Ej. Ana García" />
                         </div>
+
                         <div className="form-grupo">
                             <label>Especialidad Principal:</label>
-                            <input type="text" name="especialidad" value={formulario.especialidad} onChange={manejarInput} />
+                            <input type="text" name="especialidad" value={formulario.especialidad} onChange={manejarInput} placeholder="Ej. Hardware, Redes..." />
                         </div>
+
                         <div className="form-grupo">
-                            <label>Teléfono:</label>
-                            <input type="text" name="telefono" value={formulario.telefono} onChange={manejarInput} />
+                            <label>Teléfono de Contacto:</label>
+                            <input type="text" name="telefono" value={formulario.telefono} onChange={manejarInput} placeholder="Ej. 555-1234" />
                         </div>
+
                         <div className="form-grupo">
-                            <label>Estado:</label>
+                            <label>Estado Laboral:</label>
                             <select name="estado" value={formulario.estado} onChange={manejarInput} className="input-select">
-                                <option value="Activo">Activo</option>
-                                <option value="Inactivo">Inactivo</option>
+                                <option value="Activo">Activo (Disponible para trabajar)</option>
+                                <option value="Inactivo">Inactivo (Vacaciones, Baja, etc.)</option>
                             </select>
                         </div>
+
                         <div className="modal-botones">
                             <button className="btn-guardar" onClick={guardarTecnico}>Guardar Registro</button>
                             <button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button>
@@ -167,6 +244,7 @@ function Tecnicos() {
                     </div>
                 </div>
             )}
+
         </div>
     );
 }
