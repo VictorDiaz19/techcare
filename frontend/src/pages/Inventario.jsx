@@ -1,185 +1,169 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Inventario.css';
 
 function Inventario() {
-    // 1. ESTADO DE LA TABLA
-    const [inventario, setInventario] = useState([
-        { id: 4001, nombre: 'Pantalla iPhone 13', categoria: 'Pantallas', stockActual: 1, stockMinimo: 3, precio: 1500 },
-        { id: 4002, nombre: 'Batería Samsung S21', categoria: 'Baterías', stockActual: 5, stockMinimo: 2, precio: 400 },
-        { id: 4003, nombre: 'Pasta Térmica', categoria: 'Consumibles', stockActual: 0, stockMinimo: 5, precio: 150}
-    ]);
+    const [inventario, setInventario] = useState([]);
+    const [cargando, setCargando] = useState(true);
+    const API_URL = "http://localhost:8082/inventario";
 
-    // 2. ESTADOS DEL MODAL
+    useEffect(() => {
+        cargarInventario();
+    }, []);
+
+    const cargarInventario = async () => {
+        try {
+            const respuesta = await fetch(API_URL);
+            if (respuesta.ok) {
+                const datos = await respuesta.json();
+                // MAPEO DEFENSIVO
+                const formateados = Array.isArray(datos) ? datos.map(item => ({
+                    idReal: item.idProducto || item.ID_producto || item.id_producto,
+                    nombreReal: item.nombrePieza || item.NombrePieza || item.nombre_pieza,
+                    categoriaReal: item.categoria || item.Categoria || 'Otros',
+                    stockActualReal: item.stockActual || item.StockActual || 0,
+                    stockMinimoReal: item.stockMinimo || item.StockMinimo || 2,
+                    precioReal: parseFloat(item.precioUnitario || item.PrecioUnitario || 0)
+                })) : [];
+                setInventario(formateados);
+            }
+        } catch (error) {
+            console.error("Error al cargar inventario:", error);
+        } finally {
+            setCargando(false);
+        }
+    };
+
     const [modalAbierto, setModalAbierto] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
     const [itemEditandoId, setItemEditandoId] = useState(null);
 
-    //3. ESTADO DEL FORMULARIO
     const [formulario, setFormulario] = useState({
-        nombre: '',
+        nombreProducto: '',
         categoria: '',
-        stockActual: '',
-        stockMinimo: '',
-        precio: ''
+        cantidad: '',
+        costo: ''
     });
 
     const manejarInput = (e) => {
         setFormulario({ ...formulario, [e.target.name]: e.target.value });
     };
 
-    // 4. FUNCIONES PARA ABRIR EL MODAL
     const abrirModalCrear = () => {
         setModoEdicion(false);
-        setItemEditandoId(null);
-        setFormulario({ nombre: '', categoria: '', stockActual: '', stockMinimo: '', precio: '' });
+        setFormulario({ nombreProducto: '', categoria: '', cantidad: '', costo: '' });
         setModalAbierto(true);
     };
 
     const abrirModalEditar = (item) => {
         setModoEdicion(true);
-        setItemEditandoId(item.id);
+        setItemEditandoId(item.idReal);
         setFormulario({
-            nombre: item.nombre,
-            categoria: item.categoria,
-            stockActual: item.stockActual,
-            stockMinimo: item.stockMinimo,
-            precio: item.precio
+            nombreProducto: item.nombreReal,
+            categoria: item.categoriaReal,
+            cantidad: item.stockActualReal,
+            costo: item.precioReal
         });
         setModalAbierto(true);
     };
 
-    // 5. FUNCIÓN PARA ELIMINAR
-    const eliminarItem = (id) => {
-        const confirmar = window.confirm("¿Estás seguro de que deseas eliminar esta refacción del inventario?");
-        if (confirmar) {
-            const nuevoInventario = inventario.filter(item => item.id !== id);
-            setInventario(nuevoInventario);
+    const eliminarItem = async (id) => {
+        if (window.confirm("¿Eliminar este producto?")) {
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarInventario();
+            } catch (error) { console.error(error); }
         }
     };
 
-    // 6. FUNCIÓN PARA GUARDAR
-    const guardarItem = () => {
-        if (modoEdicion) {
-            const inventarioActualizado = inventario.map(item => {
-                if (item.id === itemEditandoId) {
-                    return {
-                        ...item,
-                        nombre: formulario.nombre,
-                        categoria: formulario.categoria,
-                        stockActual: parseInt(formulario.stockActual) || 0,
-                        stockMinimo: parseInt(formulario.stockMinimo) || 0,
-                        precio: parseFloat(formulario.precio) || 0
-                    };
-                }
-                return item;
+    const guardarItem = async () => {
+        try {
+            const metodo = modoEdicion ? 'PUT' : 'POST';
+            const url = modoEdicion ? `${API_URL}/${itemEditandoId}` : API_URL;
+            const res = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formulario)
             });
-            setInventario(inventarioActualizado);
-        } else {
-            const nuevoItem = {
-                id: Math.floor(Math.random() * 900) + 4000,
-                nombre: formulario.nombre,
-                categoria: formulario.categoria,
-                stockActual: parseInt(formulario.stockActual) || 0,
-                stockMinimo: parseInt(formulario.stockMinimo) || 0,
-                precio: parseFloat(formulario.precio) || 0
-            };
-            setInventario([nuevoItem, ...inventario]);
-        }
-
-        setModalAbierto(false);
+            if (res.ok) {
+                cargarInventario();
+                setModalAbierto(false);
+            }
+        } catch (error) { console.error(error); }
     };
 
     return (
         <div className="inventario-container">
-
             <div className="inventario-header">
                 <h1>GESTIÓN DE INVENTARIO</h1>
                 <div className="header-acciones">
                     <input type="text" placeholder="Buscar refacción..." className="input-buscador"/>
-                    <button className="btn-nuevo-item" onClick={abrirModalCrear}>
-                    + NUEVA REFACCIÓN
-                    </button>
+                    <button className="btn-nuevo-item" onClick={abrirModalCrear}>+ NUEVA REFACCIÓN</button>
                 </div>
             </div>
 
             <div className="tabla-container">
-                <table className="tabla-inventario">
-                    <thead>
-                        <tr>
-                            <th>ID (SKU)</th>
-                            <th>Refacción / Insumo</th>
-                            <th>Categoría</th>
-                            <th>Stock Actual</th>
-                            <th>Precio Unitario</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {inventario.map((item) => (
-                            <tr key={item.id}>
-                                <td>{item.id}</td>
-                                <td><strong>{item.nombre}</strong></td>
-                                <td><span className="categoria-pill">{item.categoria}</span></td>
-
-                                {/* LOGICA DE ALERTA DE STOCK */}
-                                <td>
-                                    <span className={`stock-numero ${item.stockActual <= item.stockMinimo ? 'alerta-roja' : 'stock-sano'}`}>
-                                        {item.stockActual} pzas.
-                                    </span>
-                                </td>
-
-                                <td>${item.precio.toLocaleString('es-MX')} MXN</td>
-                                <td className="acciones-celda">
-                                    <button className="btn-editar" title="Editar" onClick={() => abrirModalEditar(item)}>✏️</button>
-                                    <button className="btn-eliminar" title="Eliminar" onClick={() => eliminarItem(item.id)}>🗑️</button>
-                                </td>
+                {cargando ? <p style={{textAlign:'center'}}>Conectando...</p> : (
+                    <table className="tabla-inventario">
+                        <thead>
+                            <tr>
+                                <th>ID (SKU)</th>
+                                <th>Refacción / Insumo</th>
+                                <th>Categoría</th>
+                                <th>Stock Actual</th>
+                                <th>Precio Unitario</th>
+                                <th>Acciones</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {inventario.length > 0 ? inventario.map((item) => (
+                                <tr key={item.idReal}>
+                                    <td>{item.idReal}</td>
+                                    <td><strong>{item.nombreReal}</strong></td>
+                                    <td><span className="categoria-pill">{item.categoriaReal}</span></td>
+                                    <td>
+                                        <span className={`stock-numero ${item.stockActualReal <= item.stockMinimoReal ? 'alerta-roja' : 'stock-sano'}`}>
+                                            {item.stockActualReal} pzas.
+                                        </span>
+                                    </td>
+                                    <td>${item.precioReal.toLocaleString('es-MX')} MXN</td>
+                                    <td className="acciones-celda">
+                                        <button className="btn-editar" onClick={() => abrirModalEditar(item)}>✏️</button>
+                                        <button className="btn-eliminar" onClick={() => eliminarItem(item.idReal)}>🗑️</button>
+                                    </td>
+                                </tr>
+                            )) : <tr><td colSpan="6" style={{textAlign:'center'}}>No hay productos registrados.</td></tr>}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
-            {/* --- PANTALLA EMERGENTE (MODAL) --- */}
             {modalAbierto && (
                 <div className="modal-overlay">
                     <div className="modal-content">
                         <h2>{modoEdicion ? 'ACTUALIZAR INVENTARIO' : 'NUEVA REFACCIÓN'}</h2>
-
                         <div className="form-grupo">
-                            <label>Nombre de la pieza/insumo:</label>
-                            <input type="text" name="nombre" value={formulario.nombre} onChange={manejarInput} />
+                            <label>Nombre de la pieza:</label>
+                            <input type="text" name="nombreProducto" value={formulario.nombreProducto} onChange={manejarInput} />
                         </div>
-
                         <div className="form-grupo">
                             <label>Categoría:</label>
                             <select name="categoria" value={formulario.categoria} onChange={manejarInput} className="input-select">
-                                <option value="">Selecciona una opción...</option>
+                                <option value="">Seleccione...</option>
                                 <option value="Pantallas">Pantallas</option>
                                 <option value="Baterías">Baterías</option>
-                                <option value="Teclados">Teclados</option>
-                                <option value="Consumibles">Consumibles (Pastas, alcohol, etc)</option>
-                                <option value="Carcasas">Carcasas</option>
-                                <option value="Otros">Otros</option>
+                                <option value="Consumibles">Consumibles</option>
                             </select>
                         </div>
-
-                        {/* Agrupamos los dos stocks en una sola fila para que se vea profesional */}
                         <div className="form-fila-doble">
                             <div className="form-grupo">
                                 <label>Stock Actual:</label>
-                                <input type="number" name="stockActual" value={formulario.stockActual} onChange={manejarInput} />
+                                <input type="number" name="cantidad" value={formulario.cantidad} onChange={manejarInput} />
                             </div>
                             <div className="form-grupo">
-                                <label>Stock Mínimo (Alerta):</label>
-                                <input type="number" name="stockMinimo" value={formulario.stockMinimo} onChange={manejarInput} />
+                                <label>Precio Unitario:</label>
+                                <input type="number" name="costo" value={formulario.costo} onChange={manejarInput} />
                             </div>
                         </div>
-
-                        <div className="form-grupo">
-                            <label>Precio Unitario:</label>
-                            <input type="number" name="precio" value={formulario.precio} onChange={manejarInput} />
-                        </div>
-
                         <div className="modal-botones">
                             <button className="btn-guardar" onClick={guardarItem}>Guardar Refacción</button>
                             <button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button>

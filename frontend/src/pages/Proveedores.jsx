@@ -1,24 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Proveedores.css';
 
 function Proveedores() {
-    // 1. ESTADO DE LA TABLA
-    const [proveedores, setProveedores] = useState([
-        { id: 6001, empresa: 'TechParts Mx', telefono: '555-123-4567', correo: 'ventas@techparts.mx', categoria: 'General', tiempoEntrega: '2 a 3 días' },
-        { id: 6002, empresa: 'Pantallas OEM Original', telefono: '555-987-6543', correo: 'contacto@oempantallas.com', categoria: 'Pantallas', tiempoEntrega: '5 a 7 días' },
-        { id: 6003, empresa: 'Pilas y Baterías Cert', telefono: '555-456-7890', correo: 'info@baterias.com', categoria: 'Baterías', tiempoEntrega: '1 a 2 días' }
-    ]);
+    const [proveedores, setProveedores] = useState([]);
+    const [cargando, setCargando] = useState(true);
+    const API_URL = "http://localhost:8082/proveedores";
 
-    // 2. ESTADO DEL MODAL
+    useEffect(() => {
+        cargarProveedores();
+    }, []);
+
+    const cargarProveedores = async () => {
+        try {
+            const respuesta = await fetch(API_URL);
+            if (respuesta.ok) {
+                const datos = await respuesta.json();
+                setProveedores(Array.isArray(datos) ? datos : []);
+            }
+        } catch (error) {
+            console.error("Error al cargar proveedores:", error);
+        } finally {
+            setCargando(false);
+        }
+    };
+
     const [modalAbierto, setModalAbierto] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
     const [proveedorEditandoId, setProveedorEditandoId] = useState(null);
 
-    // 3. ESTADO DEL FORMULARIO
     const [formulario, setFormulario] = useState({
         empresa: '',
-        telefono: '',
-        correo: '',
+        nombreContacto: '',
+        telefonoContacto: '',
+        emailProveedor: '',
         categoria: '',
         tiempoEntrega: ''
     });
@@ -27,65 +41,49 @@ function Proveedores() {
         setFormulario({ ...formulario, [e.target.name]: e.target.value });
     };
 
-    // 4. FUNCIONES PARA ABRIR EL MODAL
     const abrirModalCrear = () => {
         setModoEdicion(false);
-        setProveedorEditandoId(null);
-        setFormulario({ empresa: '', telefono: '', correo: '', categoria: '', tiempoEntrega: '' });
+        setFormulario({ empresa: '', nombreContacto: '', telefonoContacto: '', emailProveedor: '', categoria: '', tiempoEntrega: '' });
         setModalAbierto(true);
     };
 
-    const abrirModalEditar = (proveedor) => {
+    const abrirModalEditar = (p) => {
         setModoEdicion(true);
-        setProveedorEditandoId(proveedor.id);
+        setProveedorEditandoId(p.idProveedor);
         setFormulario({
-            empresa: proveedor.empresa,
-            telefono: proveedor.telefono,
-            correo: proveedor.correo,
-            categoria: proveedor.categoria,
-            tiempoEntrega: proveedor.tiempoEntrega
+            empresa: p.empresa,
+            nombreContacto: p.nombreContacto || '',
+            telefonoContacto: p.telefonoContacto || '',
+            emailProveedor: p.emailProveedor || '',
+            categoria: p.categoria || '',
+            tiempoEntrega: p.tiempoEntrega || ''
         });
         setModalAbierto(true);
     };
 
-    // 5. FUNCIÓN PARA ELIMINAR
-    const eliminarProveedor = (id) => {
-        const confirmar = window.confirm("¿Estás seguro de que deseas eliminar este proveedor?");
-        if (confirmar) {
-            const nuevosProveedores = proveedores.filter(p => p.id !== id);
-            setProveedores(nuevosProveedores);
+    const eliminarProveedor = async (id) => {
+        if (window.confirm("¿Eliminar este proveedor?")) {
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarProveedores();
+            } catch (error) { console.error(error); }
         }
     };
 
-    // 6. FUNCIÓN PARA GUARDAR
-    const guardarProveedor = () => {
-        if (modoEdicion) {
-            const proveedoresActualizados = proveedores.map(p => {
-                if (p.id === proveedorEditandoId) {
-                    return {
-                        ...p,
-                        empresa: formulario.empresa,
-                        telefono: formulario.telefono,
-                        correo: formulario.correo,
-                        categoria: formulario.categoria,
-                        tiempoEntrega: formulario.tiempoEntrega
-                    };
-                }
-                return p;
+    const guardarProveedor = async () => {
+        try {
+            const metodo = modoEdicion ? 'PUT' : 'POST';
+            const url = modoEdicion ? `${API_URL}/${proveedorEditandoId}` : API_URL;
+            const res = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formulario)
             });
-            setProveedores(proveedoresActualizados);
-        } else {
-            const nuevoProveedor = {
-                id: Math.floor(Math.random() * 900) + 6000,
-                empresa: formulario.empresa,
-                telefono: formulario.telefono,
-                correo: formulario.correo,
-                categoria: formulario.categoria,
-                tiempoEntrega: formulario.tiempoEntrega
-            };
-            setProveedores([nuevoProveedor, ...proveedores]);
-        }
-        setModalAbierto(false);
+            if (res.ok) {
+                cargarProveedores();
+                setModalAbierto(false);
+            }
+        } catch (error) { console.error(error); }
     };
 
     return (
@@ -94,85 +92,79 @@ function Proveedores() {
                 <h1>DIRECTORIO DE PROVEEDORES</h1>
                 <div className="header-acciones">
                     <input type="text" placeholder="Buscar empresa..." className="input-buscador" />
-                    <button className="btn-nuevo-proveedor" onClick={abrirModalCrear}>
-                        + NUEVO PROVEEDOR
-                    </button>
+                    <button className="btn-nuevo-proveedor" onClick={abrirModalCrear}>+ NUEVO PROVEEDOR</button>
                 </div>
             </div>
 
             <div className="tabla-container">
-                <table className="tabla-proveedores">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Empresa / Razón Social</th>
-                            <th>Contacto</th>
-                            <th>Tipo de Insumos</th>
-                            <th>Tiempo de Entrega</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {proveedores.map((proveedor) => (
-                            <tr key={proveedor.id}>
-                                <td>{proveedor.id}</td>
-                                <td><strong>{proveedor.empresa}</strong></td>
-                                <td>
-                                    <div className="info-contacto">
-                                        <span>📞 {proveedor.telefono}</span>
-                                        <span>✉️ {proveedor.correo}</span>
-                                    </div>
-                                </td>
-                                <td><span className="categoria-pill">{proveedor.categoria}</span></td>
-                                <td>⏱️ {proveedor.tiempoEntrega}</td>
-                                <td className="acciones-celda">
-                                    <button className="btn-editar" title="Editar" onClick={() => abrirModalEditar(proveedor)}>✏️</button>
-                                    <button className="btn-eliminar" title="Eliminar" onClick={() => eliminarProveedor(proveedor.id)}>🗑️</button>
-                                </td>
+                {cargando ? <p style={{textAlign:'center'}}>Cargando proveedores...</p> : (
+                    <table className="tabla-proveedores">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Empresa / Razón Social</th>
+                                <th>Contacto</th>
+                                <th>Tipo de Insumos</th>
+                                <th>Tiempo de Entrega</th>
+                                <th>Acciones</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {proveedores.length > 0 ? proveedores.map((p) => (
+                                <tr key={p.idProveedor}>
+                                    <td>{p.idProveedor}</td>
+                                    <td><strong>{p.empresa}</strong></td>
+                                    <td>
+                                        <div className="info-contacto">
+                                            <span>📞 {p.telefonoContacto}</span>
+                                            <span>✉️ {p.emailProveedor}</span>
+                                        </div>
+                                    </td>
+                                    <td><span className="categoria-pill">{p.categoria}</span></td>
+                                    <td>⏱️ {p.tiempoEntrega}</td>
+                                    <td className="acciones-celda">
+                                        <button className="btn-editar" onClick={() => abrirModalEditar(p)}>✏️</button>
+                                        <button className="btn-eliminar" onClick={() => eliminarProveedor(p.idProveedor)}>🗑️</button>
+                                    </td>
+                                </tr>
+                            )) : <tr><td colSpan="6" style={{textAlign:'center'}}>No hay proveedores registrados.</td></tr>}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
-            {/* --- PANTALLA EMERGENTE --- */}
             {modalAbierto && (
                 <div className="modal-overlay">
                     <div className="modal-content">
                         <h2>{modoEdicion ? 'ACTUALIZAR PROVEEDOR' : 'NUEVO PROVEEDOR'}</h2>
-
                         <div className="form-grupo">
-                            <label>Empresa o Razón Social:</label>
+                            <label>Empresa:</label>
                             <input type="text" name="empresa" value={formulario.empresa} onChange={manejarInput} />
                         </div>
-
                         <div className="form-fila-doble">
                             <div className="form-grupo">
                                 <label>Teléfono:</label>
-                                <input type="text" name="telefono" value={formulario.telefono} onChange={manejarInput} />
+                                <input type="text" name="telefonoContacto" value={formulario.telefonoContacto} onChange={manejarInput} />
                             </div>
                             <div className="form-grupo">
-                                <label>Correo Electrónico:</label>
-                                <input type="email" name="correo" value={formulario.correo} onChange={manejarInput} />
+                                <label>Email:</label>
+                                <input type="email" name="emailProveedor" value={formulario.emailProveedor} onChange={manejarInput} />
                             </div>
                         </div>
-
                         <div className="form-grupo">
-                            <label>Categoría principal que surten:</label>
+                            <label>Categoría:</label>
                             <select name="categoria" value={formulario.categoria} onChange={manejarInput} className="input-select">
-                                <option value="">Selecciona una categoría...</option>
-                                <option value="General">General (Múltiples refacciones)</option>
-                                <option value="Pantallas">Pantallas y Displays</option>
+                                <option value="">Seleccione...</option>
+                                <option value="General">General</option>
+                                <option value="Pantallas">Pantallas</option>
                                 <option value="Baterías">Baterías</option>
-                                <option value="Consumibles">Consumibles y Herramientas</option>
+                                <option value="Consumibles">Consumibles</option>
                             </select>
                         </div>
-
                         <div className="form-grupo">
-                            <label>Tiempo estimado de entrega:</label>
-                            <input type="text" name="tiempoEntrega" value={formulario.tiempoEntrega} onChange={manejarInput} placeholder="Ej. 2 a 3 días hábiles" />
+                            <label>Tiempo Entrega:</label>
+                            <input type="text" name="tiempoEntrega" value={formulario.tiempoEntrega} onChange={manejarInput} />
                         </div>
-
                         <div className="modal-botones">
                             <button className="btn-guardar" onClick={guardarProveedor}>Guardar Proveedor</button>
                             <button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button>
@@ -180,7 +172,6 @@ function Proveedores() {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }

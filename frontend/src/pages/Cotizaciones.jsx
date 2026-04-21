@@ -1,28 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Cotizaciones.css';
 
 function Cotizaciones() {
-    // DATOS SIMULADOS
-    const listaClientes = ['Victor', 'Edwin', 'Carlos', 'Christian'];
-    const listaItems = [
-        { tipo: 'Servicio', nombre: 'Formateo de PC', precio: 200 },
-        { tipo: 'Servicio', nombre: 'Cambio de Display', precio: 1800},
-        { tipo: 'Refacción', nombre: 'Batería Laptop HP', precio: 1200}
-    ];
-
     // 1. ESTADO DE LA TABLA PRINCIPAL
-    const [cotizaciones, setCotizaciones] = useState([
-        { id: 7001, fecha: '11/04/2026', cliente: 'Irving Manuel', descripcion: 'Reparación Laptop HP', total: 1624.00, estado: 'Pendiente' }
-    ]);
+    const [cotizaciones, setCotizaciones] = useState([]);
+
+    // DATOS DINÁMICOS DESDE EL BACKEND
+    const [listaClientes, setListaClientes] = useState([]);
+    const [clientesData, setClientesData] = useState([]); 
+    const [listaItems, setListaItems] = useState([]);
+
+    const API_BASE = "http://localhost:8082";
+
+    useEffect(() => {
+        cargarDatos();
+    }, []);
+
+    const cargarDatos = async () => {
+        try {
+            // Cargar Cotizaciones
+            const resCot = await fetch(`${API_BASE}/cotizaciones`);
+            if (resCot.ok && resCot.status !== 204) {
+                const dataCot = await resCot.json();
+                // Jackson suele devolver ID_cotizacion como id_cotizacion o idcotizacion. 
+                // Mapeamos defensivamente.
+                const formateadas = Array.isArray(dataCot) ? dataCot.map(c => ({
+                    id: c.id_cotizacion || c.ID_cotizacion || c.idCotizacion,
+                    fecha: c.fecha || c.Fecha, 
+                    cliente: c.cliente ? (c.cliente.nombreCli || c.cliente.nombre_cli) : 'Desconocido',
+                    descripcion: c.descripcion || c.equipoCotiz || 'Sin descripción',
+                    total: parseFloat(c.total || c.Total) || 0,
+                    estado: c.estadoCotiz || c.EstadoCotiz || 'Pendiente'
+                })) : [];
+                setCotizaciones(formateadas);
+            }
+
+            // Cargar Clientes para el combo box
+            const resCli = await fetch(`${API_BASE}/clientes`);
+            if (resCli.ok && resCli.status !== 204) {
+                const dataCli = await resCli.json();
+                setClientesData(dataCli);
+                setListaClientes(dataCli.map(c => c.nombreCli || c.nombre_cli));
+            }
+
+            // Cargar Servicios e Inventario
+            const [resSer, resInv] = await Promise.all([
+                fetch(`${API_BASE}/servicios/listar`),
+                fetch(`${API_BASE}/inventario`)
+            ]);
+
+            let itemsCombinados = [];
+            if (resSer.ok && resSer.status !== 204) {
+                const servicios = await resSer.json();
+                itemsCombinados = [...itemsCombinados, ...servicios.map(s => ({
+                    tipo: 'Servicio', nombre: s.nombreServicio, precio: parseFloat(s.precioBase)
+                }))];
+            }
+            if (resInv.ok && resInv.status !== 204) {
+                const inventario = await resInv.json();
+                itemsCombinados = [...itemsCombinados, ...inventario.map(i => ({
+                    tipo: 'Refacción', nombre: i.nombrePieza, precio: parseFloat(i.precioUnitario)
+                }))];
+            }
+            setListaItems(itemsCombinados);
+
+        } catch (error) {
+            console.error("Error al cargar datos:", error);
+        }
+    };
+
 
     // 2. ESTADOS DEL MODAL
     const [modalAbierto, setModalAbierto] = useState(false);
 
-    // 3. ESTADOS DEL FORMULARIO DE LA COTIZACIÓN
+    // 3. ESTADOS DEL FORMULARIO
     const [formulario, setFormulario] = useState({ cliente: '', descripcion: '', descuento: 0, impuesto: 16 });
-    const [partidas, setPartidas] = useState([]); // Aquí guardaremos las filas de servicios/refacciones
+    const [partidas, setPartidas] = useState([]); 
 
-    // 4. ESTADO PARA LA NUEVA FILA QUE EL USUARIO ESTA AGREGANDO
+    // 4. ESTADO PARA LA NUEVA FILA
     const [itemSeleccionado, setItemSeleccionado] = useState('');
     const [cantidadInput, setCantidadInput] = useState(1);
 
@@ -37,19 +92,16 @@ function Cotizaciones() {
         setFormulario({ ...formulario, [e.target.name]: e.target.value });
     };
 
-    // Cuando el usuario elige un servicio de la lista, buscamos su precio original
     const manejarSeleccionItem = (e) => {
         setItemSeleccionado(e.target.value);
     }
 
     const agregarPartida = () => {
         if (!itemSeleccionado) return alert("Selecciona un concepto primero.");
-
-        // Buscamos los datos del item seleccionado en nuestra lista falsa
         const infoItem = listaItems.find(i => i.nombre === itemSeleccionado);
+        if(!infoItem) return;
         const precioU = infoItem.precio;
         const totalFila = precioU * cantidadInput;
-
         const nuevaFila = {
             concepto: infoItem.nombre,
             tipo: infoItem.tipo,
@@ -57,9 +109,7 @@ function Cotizaciones() {
             precioUnitario: precioU,
             total: totalFila
         };
-
         setPartidas([...partidas, nuevaFila]);
-        // Limpiamos los inputs pequeños para la siguiente fila
         setItemSeleccionado('');
         setCantidadInput(1);
     };
@@ -69,24 +119,40 @@ function Cotizaciones() {
         setPartidas(nuevasPartidas);
     };
 
-    const guardarCotizacion = () => {
+    const guardarCotizacion = async () => {
         if(partidas.length === 0) return alert("Agrega al menos una partida a la cotización.");
+        if(!formulario.cliente) return alert("Selecciona un cliente.");
 
-        const nuevaCotizacion = {
-            id: Math.floor(Math.random() * 900) + 7000,
-            fecha: new Date().toLocaleDateString('es-MX'),
-            cliente: formulario.cliente,
-            descripcion: formulario.descripcion,
+        const clienteSeleccionado = clientesData.find(c => (c.nombreCli || c.nombre_cli) === formulario.cliente);
+        
+        const payload = {
+            fecha: new Date().toISOString().split('T')[0], 
+            equipoCotiz: formulario.descripcion,
+            estadoCotiz: 'Pendiente',
             total: calcularTotalFinal(),
-            estado: 'Pendiente'
+            descripcion: formulario.descripcion,
+            cliente: clienteSeleccionado ? { id_cliente: clienteSeleccionado.id_cliente || clienteSeleccionado.ID_cliente } : null
         };
 
-        setCotizaciones([nuevaCotizacion, ...cotizaciones]);
-        setModalAbierto(false);
+        try {
+            const res = await fetch(`${API_BASE}/cotizaciones`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                await cargarDatos();
+                setModalAbierto(false);
+            } else {
+                alert("Error al guardar la cotización");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
     };
 
     const abrirModalNuevo = () => {
-        setFormulario({ cliente: '', descripcion: '', descuento: 0, impuestos: 16 });
+        setFormulario({ cliente: '', descripcion: '', descuento: 0, impuesto: 16 });
         setPartidas([]);
         setModalAbierto(true);
     };
@@ -112,7 +178,7 @@ function Cotizaciones() {
                         </tr>
                     </thead>
                     <tbody>
-                        {cotizaciones.map((coti) => (
+                        {cotizaciones.length > 0 ? cotizaciones.map((coti) => (
                             <tr key={coti.id}>
                                 <td>{coti.id}</td>
                                 <td>{coti.fecha}</td>
@@ -124,19 +190,17 @@ function Cotizaciones() {
                                     <button className="btn-ver-detalles" title="Ver / Imprimir">🖨️</button>
                                 </td>
                             </tr>
-                        ))}
+                        )) : (
+                            <tr><td colSpan="7" style={{textAlign:'center'}}>No hay cotizaciones registradas.</td></tr>
+                        )}
                     </tbody>
                 </table>
             </div>
 
-            {/* --- EL SUPER MODAL DE COTIZACIONES --- */}
             {modalAbierto && (
                 <div className="modal-overlay">
-                    {/* Fíjate que le pusimos una clase extra "modal-coti" para hacerlo más ancho */}
                     <div className="modal-content modal-coti">
                         <h2>DISEÑADOR DE COTIZACIÓN</h2>
-
-                        {/* 1. DATOS GENERALES */}
                         <div className="form-fila-doble">
                             <div className="form-grupo">
                                 <label>Cliente:</label>
@@ -150,10 +214,7 @@ function Cotizaciones() {
                                 <input type="text" name="descripcion" value={formulario.descripcion} onChange={manejarInputFormulario} placeholder="Ej. Reparación PC Gamer" />
                             </div>
                         </div>
-
                         <hr className="separador"/>
-
-                        {/* 2. AGREGAR PARTIDAS (Cajita gris para armar la fila) */}
                         <div className="caja-agregar-partida">
                             <div className="form-grupo w-50">
                                 <label>Servicio / Refacción:</label>
@@ -169,12 +230,10 @@ function Cotizaciones() {
                                 <input type="number" min="1" value={cantidadInput} onChange={(e) => setCantidadInput(e.target.value)} />
                             </div>
                             <div className="form-grupo w-boton">
-                                <label>&nbsp;</label> {/* Espacio vacío para alinear el botón */}
+                                <label>&nbsp;</label>
                                 <button className="btn-agregar-fila" onClick={agregarPartida}>+ Añadir</button>
                             </div>
                         </div>
-
-                        {/* 3. TABLITA DE PARTIDAS AGREGADAS */}
                         <div className="tabla-partidas-contenedor">
                             <table className="tabla-partidas">
                                 <thead>
@@ -199,8 +258,6 @@ function Cotizaciones() {
                                 </tbody>
                             </table>
                         </div>
-
-                        {/* 4. TOTALES MATEMÁTICOS */}
                         <div className="totales-contenedor">
                             <div className="controles-globales">
                                 <div className="form-grupo">
@@ -219,7 +276,6 @@ function Cotizaciones() {
                                 <h3>Total Neto: <span>${calcularTotalFinal().toFixed(2)}</span></h3>
                             </div>
                         </div>
-
                         <div className="modal-botones">
                             <button className="btn-guardar" onClick={guardarCotizacion}>Guardar Cotización</button>
                             <button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button>
@@ -227,7 +283,6 @@ function Cotizaciones() {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }
