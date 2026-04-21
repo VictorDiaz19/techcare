@@ -1,24 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Clientes.css';
 
 function Clientes() {
-    // 1. ESTADO DE LA TABLA
-    const [clientes, setClientes] = useState([
-        {id: 3001, nombre: 'Victor', telefono: '755-194-1664', correo: 'victor21@gmail.com', direccion: 'La puerta'},
-        {id: 3002, nombre: 'Edwin', telefono: '755-234-4567', correo: 'Edwin23@gmail.com', direccion: 'La correa'},
-        {id: 3003, nombre: 'Irving', telefono: '755-578-7654', correo: 'Irving29@gmail.com', direccion: 'Petatlan'}
-    ]);
+    // 1. ESTADO DE LA TABLA (Ahora inicia vacía)
+    const [clientes, setClientes] = useState([]);
+    const [cargando, setCargando] = useState(true);
 
-    // 2. ESTADOS MODAL
+    // URL base de tu API
+    const API_URL = "http://localhost:8082/clientes";
+
+    // 2. EFECTO PARA CARGAR DATOS AL INICIAR
+    useEffect(() => {
+        obtenerClientes();
+    }, []);
+
+    const obtenerClientes = async () => {
+        try {
+            const respuesta = await fetch(API_URL);
+            if (respuesta.ok) {
+                const datos = await respuesta.json();
+                setClientes(datos);
+            }
+        } catch (error) {
+            console.error("Error al obtener clientes:", error);
+        } finally {
+            setCargando(false);
+        }
+    };
+
+    // 3. ESTADOS MODAL
     const [modalAbierto, setModalAbierto] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
     const [clienteEditandoId, setClienteEditandoId] = useState(null);
 
-    // 3. ESTADO DEL FORMULARIO
+    // 4. ESTADO DEL FORMULARIO (Mapeado a los nombres de tu Modelo Java)
     const [formulario, setFormulario] = useState({
-        nombre: '',
+        nombreCli: '',
         telefono: '',
-        correo: '',
+        email: '',
         direccion: ''
     });
 
@@ -26,59 +45,85 @@ function Clientes() {
         setFormulario({ ...formulario, [e.target.name]: e.target.value });
     };
 
-    // 4. FUNCIONES PARA ABRIR EL MODAL
     const abrirModalCrear = () => {
         setModoEdicion(false);
         setClienteEditandoId(null);
-        setFormulario({ nombre: '', telefono: '', correo: '', direccion: '' });
+        setFormulario({ nombreCli: '', telefono: '', email: '', direccion: '' });
         setModalAbierto(true);
     }
 
     const abrirModalEditar = (cliente) => {
         setModoEdicion(true);
-        setClienteEditandoId(cliente.id);
-        setFormulario({ nombre: cliente.nombre, telefono: cliente.telefono, correo: cliente.correo, direccion: cliente.direccion});
+        setClienteEditandoId(cliente.id_cliente);
+        setFormulario({ 
+            nombreCli: cliente.nombreCli, 
+            telefono: cliente.telefono || '', 
+            email: cliente.email || '', 
+            direccion: cliente.direccion || ''
+        });
         setModalAbierto(true);
     };
 
-    // 5. FUNCIÓN PARA ELIMINAR
-    const eliminarCliente = (id) => {
+    // 5. FUNCIÓN PARA ELIMINAR REAL
+    const eliminarCliente = async (id) => {
         const confirmar = window.confirm("¿Estás seguro de que desea eliminar a este cliente?");
         if (confirmar) {
-            const nuevosClientes = clientes.filter(cliente => cliente.id !== id);
-            setClientes(nuevosClientes);
+            try {
+                const respuesta = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                if (respuesta.ok) {
+                    setClientes(clientes.filter(c => c.id_cliente !== id));
+                } else {
+                    alert("No se pudo eliminar el cliente.");
+                }
+            } catch (error) {
+                console.error("Error al eliminar:", error);
+            }
         }
     };
 
-    // 6. FUNCIÓN PARA GUARDAR (Crear o Editar)
-    const guardarCliente = () => {
-        if (modoEdicion) {
-            const clientesActualizados = clientes.map(cliente => {
-                if (cliente.id === clienteEditandoId) {
-                    return {
-                        ...cliente,
-                        nombre: formulario.nombre,
-                        telefono: formulario.telefono,
-                        correo: formulario.correo,
-                        direccion: formulario.direccion
-                    };
-                }
-                return cliente;
-            });
-            setClientes(clientesActualizados)
-        } else {
-            const nuevoCliente = {
-                id: Math.floor(Math.random() * 900) + 3000, // IDs falsos empezando en 3000
-                nombre: formulario.nombre,
-                telefono: formulario.telefono,
-                correo: formulario.correo,
-                direccion: formulario.direccion
-            };
-            setClientes([nuevoCliente, ...clientes]);
+    // 6. FUNCIÓN PARA GUARDAR REAL (Crear o Editar)
+    const guardarCliente = async () => {
+        // Validación básica
+        if (!formulario.nombreCli) {
+            alert("El nombre es obligatorio");
+            return;
         }
 
-        setFormulario({ nombre: '', telefono: '', correo: '', direccion: ''});
-        setModalAbierto(false);
+        const datosAEnviar = {
+            ...formulario,
+            telefono: formulario.telefono ? parseInt(formulario.telefono) : null
+        };
+
+        try {
+            let respuesta;
+            if (modoEdicion) {
+                // ACTUALIZAR (PUT)
+                respuesta = await fetch(`${API_URL}/${clienteEditandoId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datosAEnviar)
+                });
+            } else {
+                // CREAR (POST)
+                respuesta = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datosAEnviar)
+                });
+            }
+
+            if (respuesta.ok) {
+                // Si todo salió bien, recargamos la lista para ver los cambios reales
+                await obtenerClientes();
+                setModalAbierto(false);
+            } else {
+                const errorText = await respuesta.text();
+                alert("Error al guardar: " + errorText);
+            }
+        } catch (error) {
+            console.error("Error al guardar:", error);
+            alert("Error de conexión con el servidor");
+        }
     };
 
     return (
@@ -97,33 +142,43 @@ function Clientes() {
 
             {/* --- TABLA DE DATOS --- */}
             <div className="tabla-container">
-                <table className='tabla-clientes'>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre Completo</th>
-                            <th>Teléfono</th>
-                            <th>Correo Electronico</th>
-                            <th>Dirección</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {clientes.map((cliente) => (
-                            <tr key={cliente.id}>
-                                <td>{cliente.id}</td>
-                                <td><strong>{cliente.nombre}</strong></td>
-                                <td>{cliente.telefono}</td>
-                                <td>{cliente.correo}</td>
-                                <td>{cliente.direccion}</td>
-                                <td className="acciones-celda">
-                                    <button className="btn-editar" title="Editar" onClick={() => abrirModalEditar(cliente)}>✏️</button>
-                                    <button className="btn-eliminar" title="Eliminar" onClick={() => eliminarCliente(cliente.id)}>🗑️</button>
-                                </td>
+                {cargando ? (
+                    <div className="cargando">Cargando datos del servidor...</div>
+                ) : (
+                    <table className='tabla-clientes'>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre Completo</th>
+                                <th>Teléfono</th>
+                                <th>Correo Electronico</th>
+                                <th>Dirección</th>
+                                <th>Acciones</th>
                             </tr>
-                        ))};
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {clientes.length > 0 ? (
+                                clientes.map((cliente) => (
+                                    <tr key={cliente.id_cliente}>
+                                        <td>{cliente.id_cliente}</td>
+                                        <td><strong>{cliente.nombreCli}</strong></td>
+                                        <td>{cliente.telefono}</td>
+                                        <td>{cliente.email}</td>
+                                        <td>{cliente.direccion}</td>
+                                        <td className="acciones-celda">
+                                            <button className="btn-editar" title="Editar" onClick={() => abrirModalEditar(cliente)}>✏️</button>
+                                            <button className="btn-eliminar" title="Eliminar" onClick={() => eliminarCliente(cliente.id_cliente)}>🗑️</button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" style={{textAlign: 'center'}}>No hay clientes registrados en la base de datos.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             {/* --- PANTALLA EMERGENTE (MODAL) --- */}
@@ -134,22 +189,22 @@ function Clientes() {
 
                         <div className="form-grupo">
                             <label>Nombre Completo:</label>
-                            <input type="text" name="nombre" value={formulario.nombre} onChange={manejarInput}/>
+                            <input type="text" name="nombreCli" value={formulario.nombreCli} onChange={manejarInput} placeholder="Ej. Juan Pérez"/>
                         </div>
 
                         <div className="form-grupo">
                             <label>Teléfono:</label>
-                            <input type="text" name="telefono" value={formulario.telefono} onChange={manejarInput}/>
+                            <input type="number" name="telefono" value={formulario.telefono} onChange={manejarInput} placeholder="7551234567"/>
                         </div>
 
                         <div className="form-grupo">
                             <label>Correo Electrónico:</label>
-                            <input type="email" name="correo" value={formulario.correo} onChange={manejarInput}/>
+                            <input type="email" name="email" value={formulario.email} onChange={manejarInput} placeholder="correo@ejemplo.com"/>
                         </div>
 
                         <div className="form-grupo">
                             <label>Dirección:</label>
-                            <textarea name="direccion" value={formulario.direccion} onChange={manejarInput} rows="2"/>
+                            <textarea name="direccion" value={formulario.direccion} onChange={manejarInput} rows="2" placeholder="Calle, Número, Colonia..."/>
                         </div>
 
                         <div className="modal-botones">
