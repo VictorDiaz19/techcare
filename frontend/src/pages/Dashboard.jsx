@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 
 function Dashboard() {
-    // 1. ESTADOS PARA LOS DATOS REALES
     const [stats, setStats] = useState({
         totalClientes: 0,
         totalProveedores: 0,
@@ -17,9 +16,12 @@ function Dashboard() {
     const [equiposListos, setEquiposListos] = useState([]);
     const [cargando, setCargando] = useState(true);
 
+    // --- NUEVOS ESTADOS PARA EL REPORTE ---
+    const [mesSeleccionado, setMesSeleccionado] = useState(new Date().getMonth() + 1);
+    const [anioSeleccionado, setAnioSeleccionado] = useState(new Date().getFullYear());
+
     const API_BASE = "http://localhost:8082";
 
-    // 2. CARGA DINÁMICA DE DATOS
     useEffect(() => {
         const cargarDashboard = async () => {
             try {
@@ -42,14 +44,9 @@ function Dashboard() {
         cargarDashboard();
     }, []);
 
-    // 3. FUNCIÓN PARA DESCARGAR REPORTE PDF
+    // FUNCIÓN DE DESCARGA ACTUALIZADA CON PARÁMETROS ELIGIBLES
     const descargarReporteProductividad = () => {
-        const fechaActual = new Date();
-        const mes = fechaActual.getMonth() + 1; // JS meses son 0-11
-        const anio = fechaActual.getFullYear();
-        
-        // Abrimos el PDF en una nueva pestaña para descarga directa
-        window.open(`${API_BASE}/pdf/reportes/productividad?mes=${mes}&anio=${anio}`, '_blank');
+        window.open(`${API_BASE}/pdf/reportes/productividad?mes=${mesSeleccionado}&anio=${anioSeleccionado}`, '_blank');
     };
 
     return (
@@ -131,16 +128,52 @@ function Dashboard() {
                 </div>
             </section>
 
-            {/* --- ACCIONES RÁPIDAS (VINCULADO AL PDF) --- */}
+            {/* --- SECCIÓN DE REPORTES CON SELECTORES --- */}
             <section className="dashboard-acciones-rapidas" style={{marginTop:'30px'}}>
                 <h2 style={{fontSize:'1.5rem', color:'#2c3e50', marginBottom:'15px'}}>Reportes y Administración</h2>
-                <div style={{display:'flex', gap:'15px'}}>
+                <div style={{display:'flex', gap:'15px', alignItems:'center', background:'#f8f9fa', padding:'20px', borderRadius:'8px'}}>
+                    
+                    <div style={{display:'flex', flexDirection:'column', gap:'5px'}}>
+                        <label style={{fontSize:'0.9rem', fontWeight:'bold'}}>Mes:</label>
+                        <select 
+                            value={mesSeleccionado} 
+                            onChange={(e) => setMesSeleccionado(e.target.value)}
+                            style={{padding:'8px', borderRadius:'4px', border:'1px solid #ddd'}}
+                        >
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                    </div>
+
+                    <div style={{display:'flex', flexDirection:'column', gap:'5px'}}>
+                        <label style={{fontSize:'0.9rem', fontWeight:'bold'}}>Año:</label>
+                        <select 
+                            value={anioSeleccionado} 
+                            onChange={(e) => setAnioSeleccionado(e.target.value)}
+                            style={{padding:'8px', borderRadius:'4px', border:'1px solid #ddd'}}
+                        >
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                        </select>
+                    </div>
+
                     <button 
                         className="btn-nuevo-cliente" 
                         onClick={descargarReporteProductividad}
-                        style={{background:'#e67e22', border:'none', padding:'12px 20px'}}
+                        style={{background:'#e67e22', border:'none', padding:'12px 25px', marginTop:'22px', cursor:'pointer', fontWeight:'bold'}}
                     >
-                        📊 GENERAR REPORTE PDF (PRODUCTIVIDAD)
+                        📊 DESCARGAR REPORTE MENSUAL
                     </button>
                 </div>
             </section>

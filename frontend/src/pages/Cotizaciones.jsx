@@ -24,32 +24,40 @@ function Cotizaciones() {
             if (resCot.ok) setCotizaciones(await resCot.json());
             if (resCli.ok) setClientes(await resCli.json());
             if (resSer.ok) setServicios(await resSer.json());
-        } catch (error) {
-            console.error("Error al cargar datos:", error);
-        } finally {
-            setCargando(false);
-        }
+        } catch (error) { console.error("Error al cargar datos:", error); } finally { setCargando(false); }
     };
 
     const [modalAbierto, setModalAbierto] = useState(false);
+    const [modoEdicion, setModoEdicion] = useState(false);
+    const [idEditando, setIdEditando] = useState(null);
+
     const [formulario, setFormulario] = useState({
-        clienteId: '',
-        servicioId: '',
-        descripcion: '',
-        total: '',
-        estadoCotiz: 'Pendiente'
+        clienteId: '', servicioId: '', descripcion: '', total: '', estadoCotiz: 'Pendiente'
     });
 
-    const manejarInput = (e) => {
-        setFormulario({ ...formulario, [e.target.name]: e.target.value });
-    };
+    const manejarInput = (e) => setFormulario({ ...formulario, [e.target.name]: e.target.value });
 
     const abrirModalCrear = () => {
+        setModoEdicion(false);
         setFormulario({ clienteId: '', servicioId: '', descripcion: '', total: '', estadoCotiz: 'Pendiente' });
         setModalAbierto(true);
     };
 
+    const abrirModalEditar = (c) => {
+        setModoEdicion(true);
+        setIdEditando(c.id_cotizacion || c.ID_cotizacion);
+        setFormulario({
+            clienteId: c.cliente?.id_cliente || c.cliente?.ID_Cliente || '',
+            servicioId: c.servicio?.id_servicio || c.servicio?.idServicios || '',
+            descripcion: c.descripcion || c.EquipoCotiz || '',
+            total: c.total || c.Total || 0,
+            estadoCotiz: c.estadoCotiz || c.EstadoCotiz || 'Pendiente'
+        });
+        setModalAbierto(true);
+    };
+
     const guardarCotizacion = async () => {
+        if (!formulario.clienteId || !formulario.descripcion) return alert("Cliente y descripción son obligatorios.");
         const payload = {
             fecha: new Date().toISOString().split('T')[0],
             equipoCotiz: formulario.descripcion,
@@ -59,16 +67,16 @@ function Cotizaciones() {
             cliente: { id_cliente: parseInt(formulario.clienteId) },
             servicio: formulario.servicioId ? { id_servicio: parseInt(formulario.servicioId) } : null
         };
+        if (modoEdicion) payload.id_cotizacion = idEditando;
         try {
-            const res = await fetch(`${API_BASE}/cotizaciones`, {
-                method: 'POST',
+            const url = modoEdicion ? `${API_BASE}/cotizaciones/${idEditando}` : `${API_BASE}/cotizaciones`;
+            const metodo = modoEdicion ? 'PUT' : 'POST';
+            const res = await fetch(url, {
+                method: metodo,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (res.ok) {
-                await cargarDatos();
-                setModalAbierto(false);
-            }
+            if (res.ok) { await cargarDatos(); setModalAbierto(false); }
         } catch (error) { console.error(error); }
     };
 
@@ -79,13 +87,15 @@ function Cotizaciones() {
         }
     };
 
+    // BUSQUEDA INTELIGENTE PARA COTIZACIONES
     const filtradas = cotizaciones.filter(c => {
         const query = busqueda.toLowerCase().trim();
-        const id = c.id_cotizacion || c.ID_cotizacion;
-        const idTexto = String(id).toLowerCase();
-        const folioFormateado = `cot-${idTexto.padStart(4, '0')}`.toLowerCase();
+        const idOriginal = c.id_cotizacion || c.ID_cotizacion;
+        const folioFormateado = `cot-${String(idOriginal).padStart(4, '0')}`.toLowerCase();
         const clienteNom = (c.cliente?.nombreCli || "").toLowerCase();
-        return clienteNom.includes(query) || idTexto.includes(query) || folioFormateado.includes(query);
+        const idSimple = String(idOriginal).toLowerCase();
+
+        return clienteNom.includes(query) || folioFormateado.includes(query) || idSimple.includes(query);
     });
 
     return (
@@ -93,35 +103,26 @@ function Cotizaciones() {
             <div className="cotizaciones-header">
                 <h1>GESTOR DE COTIZACIONES</h1>
                 <div className="header-acciones">
-                    <input type="text" placeholder="Buscar..." className="input-buscador" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+                    <input type="text" placeholder="Buscar por folio (COT-0001) o cliente..." className="input-buscador" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
                     <button className="btn-nueva-coti" onClick={abrirModalCrear}>+ NUEVA COTIZACIÓN</button>
                 </div>
             </div>
-
             <div className="tabla-container">
                 {cargando ? <p style={{textAlign: 'center'}}>Cargando...</p> : (
                     <table className="tabla-cotizaciones">
                         <thead>
-                            <tr>
-                                <th>Folio</th>
-                                <th>Fecha</th>
-                                <th>Cliente</th>
-                                <th>Servicio Solicitado</th>
-                                <th>Estado</th>
-                                <th>Total</th>
-                                <th>Acciones</th>
-                            </tr>
+                            <tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Servicio</th><th>Total</th><th>Acciones</th></tr>
                         </thead>
                         <tbody>
                             {filtradas.map(c => (
                                 <tr key={c.id_cotizacion || c.ID_cotizacion}>
-                                    <td><strong>COT-{String(c.id_cotizacion || c.ID_cotizacion).padStart(4, '0')}</strong></td>
+                                    <td>COT-{String(c.id_cotizacion || c.ID_cotizacion).padStart(4, '0')}</td>
                                     <td>{c.fecha || c.Fecha}</td>
-                                    <td>{c.cliente?.nombreCli || 'Sin asignar'}</td>
-                                    <td><strong>{c.servicio?.nombreServicio || 'General / Varios'}</strong></td>
-                                    <td><span className="estado-coti">{c.estadoCotiz || c.EstadoCotiz}</span></td>
+                                    <td>{c.cliente?.nombreCli || 'S/A'}</td>
+                                    <td>{c.servicio?.nombreServicio || 'General'}</td>
                                     <td>${parseFloat(c.total || c.Total || 0).toFixed(2)}</td>
                                     <td className="acciones-celda">
+                                        <button className="btn-editar" onClick={() => abrirModalEditar(c)} title="Editar">✏️</button>
                                         <button className="btn-eliminar" onClick={() => eliminarCotizacion(c.id_cotizacion || c.ID_cotizacion)}>🗑️</button>
                                     </td>
                                 </tr>
@@ -130,47 +131,18 @@ function Cotizaciones() {
                     </table>
                 )}
             </div>
-
             {modalAbierto && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h2>NUEVA COTIZACIÓN</h2>
-                        <div className="form-grupo">
-                            <label>Cliente:</label>
-                            <select name="clienteId" value={formulario.clienteId} onChange={manejarInput} className="input-select">
-                                <option value="">Seleccionar...</option>
-                                {clientes.map(cli => <option key={cli.id_cliente} value={cli.id_cliente}>{cli.nombreCli}</option>)}
-                            </select>
-                        </div>
-                        <div className="form-grupo">
-                            <label>Servicio:</label>
-                            <select name="servicioId" value={formulario.servicioId} onChange={manejarInput} className="input-select">
-                                <option value="">Sin servicio específico</option>
-                                {servicios.map(s => <option key={s.id_servicio} value={s.id_servicio}>{s.nombreServicio}</option>)}
-                            </select>
-                        </div>
-                        <div className="form-grupo">
-                            <label>Descripción:</label>
-                            <input type="text" name="descripcion" value={formulario.descripcion} onChange={manejarInput} />
-                        </div>
+                        <h2>{modoEdicion ? 'EDITAR' : 'NUEVA'} COTIZACIÓN</h2>
+                        <div className="form-grupo"><label>Cliente:</label><select name="clienteId" value={formulario.clienteId} onChange={manejarInput} className="input-select"><option value="">Seleccionar...</option>{clientes.map(cli => <option key={cli.id_cliente} value={cli.id_cliente}>{cli.nombreCli}</option>)}</select></div>
+                        <div className="form-grupo"><label>Servicio:</label><select name="servicioId" value={formulario.servicioId} onChange={manejarInput} className="input-select"><option value="">Ninguno</option>{servicios.map(s => <option key={s.id_servicio} value={s.id_servicio}>{s.nombreServicio}</option>)}</select></div>
+                        <div className="form-grupo"><label>Descripción:</label><input type="text" name="descripcion" value={formulario.descripcion} onChange={manejarInput} /></div>
                         <div className="form-fila-doble">
-                            <div className="form-grupo">
-                                <label>Monto:</label>
-                                <input type="number" name="total" value={formulario.total} onChange={manejarInput} />
-                            </div>
-                            <div className="form-grupo">
-                                <label>Estado:</label>
-                                <select name="estadoCotiz" value={formulario.estadoCotiz} onChange={manejarInput} className="input-select">
-                                    <option value="Pendiente">Pendiente</option>
-                                    <option value="Aprobado">Aprobado</option>
-                                    <option value="Rechazado">Rechazado</option>
-                                </select>
-                            </div>
+                            <div className="form-grupo"><label>Total:</label><input type="number" name="total" value={formulario.total} onChange={manejarInput} /></div>
+                            <div className="form-grupo"><label>Estado:</label><select name="estadoCotiz" value={formulario.estadoCotiz} onChange={manejarInput} className="input-select"><option value="Pendiente">Pendiente</option><option value="Aprobado">Aprobado</option><option value="Rechazado">Rechazado</option></select></div>
                         </div>
-                        <div className="modal-botones">
-                            <button className="btn-guardar" onClick={guardarCotizacion}>Guardar</button>
-                            <button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button>
-                        </div>
+                        <div className="modal-botones"><button className="btn-guardar" onClick={guardarCotizacion}>Guardar</button><button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button></div>
                     </div>
                 </div>
             )}

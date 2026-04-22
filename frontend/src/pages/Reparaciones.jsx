@@ -39,19 +39,11 @@ function Reparaciones() {
     const [idEditando, setIdEditando] = useState(null);
 
     const [formulario, setFormulario] = useState({
-        equipo: '',
-        problema: '',
-        fechaEntrada: new Date().toISOString().split('T')[0],
-        estadoActual: 'En espera',
-        costoTotal: 0,
-        tecnicoId: '',
-        cotizacionId: '',
-        productoId: ''
+        equipo: '', problema: '', fechaEntrada: new Date().toISOString().split('T')[0],
+        estadoActual: 'En espera', costoTotal: 0, tecnicoId: '', cotizacionId: '', productoId: ''
     });
 
-    const manejarInput = (e) => {
-        setFormulario({ ...formulario, [e.target.name]: e.target.value });
-    };
+    const manejarInput = (e) => setFormulario({ ...formulario, [e.target.name]: e.target.value });
 
     const abrirModalCrear = () => {
         setModoEdicion(false);
@@ -86,56 +78,45 @@ function Reparaciones() {
             cotizacion: formulario.cotizacionId ? { id_cotizacion: parseInt(formulario.cotizacionId) } : null,
             producto: formulario.productoId ? { idProducto: parseInt(formulario.productoId) } : null
         };
-
         try {
             const metodo = modoEdicion ? 'PUT' : 'POST';
             const url = modoEdicion ? `${API_BASE}/reparaciones/${idEditando}` : `${API_BASE}/reparaciones`;
-            
             const res = await fetch(url, {
                 method: metodo,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
-            if (res.ok) {
-                await cargarTodo();
-                setModalAbierto(false);
-            }
+            if (res.ok) { await cargarTodo(); setModalAbierto(false); }
         } catch (error) { console.error(error); }
     };
 
     const imprimirComprobante = (id) => window.open(`${API_BASE}/pdf/comprobante/${id}`, '_blank');
 
-    const filtradas = ordenes.filter(o => 
-        (o.equipo || "").toLowerCase().includes(busqueda.toLowerCase()) || 
-        String(o.idReparacion).includes(busqueda)
-    );
+    // BUSQUEDA INTELIGENTE PARA REPARACIONES
+    const filtradas = ordenes.filter(o => {
+        const query = busqueda.toLowerCase().trim();
+        const folioFormateado = `rep-${String(o.idReparacion).padStart(4, '0')}`.toLowerCase();
+        const equipo = (o.equipo || "").toLowerCase();
+        const idSimple = String(o.idReparacion).toLowerCase();
+        
+        return equipo.includes(query) || folioFormateado.includes(query) || idSimple.includes(query);
+    });
 
     return (
         <div className="reparaciones-container">
             <div className="reparaciones-header">
                 <h1>ÓRDENES DE REPARACIÓN</h1>
                 <div className="header-acciones">
-                    <input type="text" placeholder="Folio o equipo..." className="input-buscador" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+                    <input type="text" placeholder="Buscar por folio (REP-0001) o equipo..." className="input-buscador" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
                     <button className="btn-nueva-orden" onClick={abrirModalCrear}>+ NUEVA ORDEN</button>
                 </div>
             </div>
-
             <div className="tabla-contenedor">
-                {cargando ? <p style={{textAlign:'center'}}>Conectando...</p> : (
+                {cargando ? <p style={{textAlign:'center'}}>Cargando...</p> : (
                     <table className="tabla-reparaciones">
                         <thead>
                             <tr>
-                                <th>Folio</th>
-                                <th>Entrada</th>
-                                <th>Equipo</th>
-                                <th>Problema</th>
-                                <th>Técnico</th>
-                                <th>Cotiz. Vinculada</th>
-                                <th>Refacción</th>
-                                <th>Estado</th>
-                                <th>Costo</th>
-                                <th>Acciones</th>
+                                <th>Folio</th><th>Entrada</th><th>Equipo</th><th>Problema</th><th>Técnico</th><th>Cotiz.</th><th>Refacción</th><th>Estado</th><th>Costo</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -160,71 +141,22 @@ function Reparaciones() {
                     </table>
                 )}
             </div>
-
-            {/* --- MODAL AMPLIADO CON TODAS LAS RELACIONES --- */}
             {modalAbierto && (
                 <div className="modal-overlay">
                     <div className="modal-content">
                         <h2>{modoEdicion ? 'GESTIONAR' : 'REGISTRAR'} REPARACIÓN</h2>
-                        
-                        <div className="form-grupo">
-                            <label>Nombre del Equipo:</label>
-                            <input type="text" name="equipo" value={formulario.equipo} onChange={manejarInput} />
-                        </div>
-
-                        <div className="form-grupo">
-                            <label>Problema reportado:</label>
-                            <textarea name="problema" value={formulario.problema} onChange={manejarInput} rows="2" />
-                        </div>
-
+                        <div className="form-grupo"><label>Nombre del Equipo:</label><input type="text" name="equipo" value={formulario.equipo} onChange={manejarInput} /></div>
+                        <div className="form-grupo"><label>Problema:</label><textarea name="problema" value={formulario.problema} onChange={manejarInput} rows="2" /></div>
                         <div className="form-fila-doble">
-                            <div className="form-grupo">
-                                <label>Técnico Asignado:</label>
-                                <select name="tecnicoId" value={formulario.tecnicoId} onChange={manejarInput} className="input-select">
-                                    <option value="">Sin técnico...</option>
-                                    {tecnicos.map(t => <option key={t.idTecnicos} value={t.idTecnicos}>{t.nombreTecnico}</option>)}
-                                </select>
-                            </div>
-                            <div className="form-grupo">
-                                <label>Estado:</label>
-                                <select name="estadoActual" value={formulario.estadoActual} onChange={manejarInput} className="input-select">
-                                    <option value="En espera">En espera</option>
-                                    <option value="En proceso">En proceso</option>
-                                    <option value="Terminado">Terminado</option>
-                                </select>
-                            </div>
+                            <div className="form-grupo"><label>Técnico:</label><select name="tecnicoId" value={formulario.tecnicoId} onChange={manejarInput} className="input-select"><option value="">S/A</option>{tecnicos.map(t => <option key={t.idTecnicos} value={t.idTecnicos}>{t.nombreTecnico}</option>)}</select></div>
+                            <div className="form-grupo"><label>Estado:</label><select name="estadoActual" value={formulario.estadoActual} onChange={manejarInput} className="input-select"><option value="En espera">En espera</option><option value="En proceso">En proceso</option><option value="Terminado">Terminado</option></select></div>
                         </div>
-
                         <div className="form-fila-doble">
-                            <div className="form-grupo">
-                                <label>Vincular Cotización:</label>
-                                <select name="cotizacionId" value={formulario.cotizacionId} onChange={manejarInput} className="input-select">
-                                    <option value="">N/A</option>
-                                    {cotizaciones.map(c => (
-                                        <option key={c.id_cotizacion || c.ID_cotizacion} value={c.id_cotizacion || c.ID_cotizacion}>
-                                            COT-{c.id_cotizacion || c.ID_cotizacion} - {c.cliente?.nombreCli}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="form-grupo">
-                                <label>Refacción Usada:</label>
-                                <select name="productoId" value={formulario.productoId} onChange={manejarInput} className="input-select">
-                                    <option value="">Ninguna...</option>
-                                    {inventario.map(p => <option key={p.idProducto} value={p.idProducto}>{p.nombrePieza}</option>)}
-                                </select>
-                            </div>
+                            <div className="form-grupo"><label>Vincular Cotización:</label><select name="cotizacionId" value={formulario.cotizacionId} onChange={manejarInput} className="input-select"><option value="">N/A</option>{cotizaciones.map(c => <option key={c.id_cotizacion || c.ID_cotizacion} value={c.id_cotizacion || c.ID_cotizacion}>COT-{String(c.id_cotizacion || c.ID_cotizacion).padStart(4, '0')}</option>)}</select></div>
+                            <div className="form-grupo"><label>Refacción:</label><select name="productoId" value={formulario.productoId} onChange={manejarInput} className="input-select"><option value="">Ninguna</option>{inventario.map(p => <option key={p.idProducto} value={p.idProducto}>{p.nombrePieza}</option>)}</select></div>
                         </div>
-
-                        <div className="form-grupo">
-                            <label>Costo Total Final ($):</label>
-                            <input type="number" name="costoTotal" value={formulario.costoTotal} onChange={manejarInput} />
-                        </div>
-
-                        <div className="modal-botones">
-                            <button className="btn-guardar" onClick={guardarOrden}>Guardar Registro</button>
-                            <button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button>
-                        </div>
+                        <div className="form-grupo"><label>Costo Total ($):</label><input type="number" name="costoTotal" value={formulario.costoTotal} onChange={manejarInput} /></div>
+                        <div className="modal-botones"><button className="btn-guardar" onClick={guardarOrden}>Guardar</button><button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button></div>
                     </div>
                 </div>
             )}
