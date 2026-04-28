@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './Servicios.css';
+import Toast from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Servicios() {
     const [servicios, setServicios] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [busqueda, setBusqueda] = useState("");
+    const [notificacion, setNotificacion] = useState(null);
+    const [confirmacion, setConfirmacion] = useState(null);
 
     const API_URL = "http://localhost:8082/servicios";
 
@@ -41,18 +45,41 @@ function Servicios() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (res.ok) { await cargarServicios(); setModalAbierto(false); }
-        } catch (error) { console.error(error); }
-    };
-
-    const eliminarServicio = async (id) => {
-        if (window.confirm("¿Eliminar?")) {
-            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-            cargarServicios();
+            if (res.ok) { 
+                await cargarServicios(); 
+                setModalAbierto(false); 
+                setNotificacion({ mensaje: `Servicio ${modoEdicion ? 'actualizado' : 'registrado'} con éxito`, tipo: 'success' });
+            } else {
+                setNotificacion({ mensaje: "Error al guardar servicio", tipo: 'error' });
+            }
+        } catch (error) { 
+            setNotificacion({ mensaje: "Error de conexión", tipo: 'error' });
         }
     };
 
-    // BUSQUEDA MEJORADA (ID Y NOMBRE)
+    const solicitarEliminar = (id) => {
+        setConfirmacion({
+            mensaje: "¿Deseas eliminar este servicio permanentemente del catálogo?",
+            onConfirm: () => ejecutarEliminacion(id)
+        });
+    };
+
+    const ejecutarEliminacion = async (id) => {
+        try {
+            const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                await cargarServicios();
+                setNotificacion({ mensaje: "Servicio eliminado con éxito", tipo: 'success' });
+            } else {
+                setNotificacion({ mensaje: "No se pudo eliminar el servicio", tipo: 'error' });
+            }
+        } catch (error) {
+            setNotificacion({ mensaje: "Error de conexión", tipo: 'error' });
+        } finally {
+            setConfirmacion(null);
+        }
+    };
+
     const filtrados = servicios.filter(s => {
         const query = busqueda.toLowerCase().trim();
         const id = String(s.id_servicio || s.ID_servicio || "").toLowerCase();
@@ -62,6 +89,9 @@ function Servicios() {
 
     return (
         <div className="servicios-container">
+            {notificacion && <Toast {...notificacion} onClose={() => setNotificacion(null)} />}
+            {confirmacion && <ConfirmModal {...confirmacion} onCancel={() => setConfirmacion(null)} />}
+
             <div className="servicios-header">
                 <h1>CATÁLOGO DE SERVICIOS</h1>
                 <div className="header-acciones">
@@ -84,7 +114,7 @@ function Servicios() {
                                     <td>${parseFloat(s.precioBase).toLocaleString('es-MX')}</td>
                                     <td className="acciones-celda">
                                         <button className="btn-editar" onClick={() => { setModoEdicion(true); setIdEditando(s.id_servicio); setFormulario(s); setModalAbierto(true); }}>✏️</button>
-                                        <button className="btn-eliminar" onClick={() => eliminarServicio(s.id_servicio)}>🗑️</button>
+                                        <button className="btn-eliminar" onClick={() => solicitarEliminar(s.id_servicio)}>🗑️</button>
                                     </td>
                                 </tr>
                             ))}

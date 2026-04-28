@@ -10,21 +10,36 @@ function LandingPage({ onLoginExitoso }) {
 
     const manejarInput = (e) => {
         setCredenciales({ ...credenciales, [e.target.name]: e.target.value });
-        setErrorAcceso(''); // Limpiamos el error si el usuario vuelve a escribir
+        setErrorAcceso(''); 
     };
 
-    const intentarLogin = (e) => {
-        e.preventDefault(); // Evita que la página se recargue al enviar el formulario
+    // LÓGICA DE LOGIN REAL (BCRYPT + ROLES)
+    const intentarLogin = async (e) => {
+        e.preventDefault(); 
+        setErrorAcceso('');
 
-        // Leemos las variables secretas de Vite
-        const usuarioReal = import.meta.env.VITE_USUARIO_ADMIN;
-        const passwordReal = import.meta.env.VITE_PASSWORD_ADMIN;
+        try {
+            const respuesta = await fetch("http://localhost:8082/auth/login", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    username: credenciales.usuario, 
+                    password: credenciales.password 
+                })
+            });
 
-        // SIMULACIÓN DE SEGURIDAD (Esto en el futuro lo validará tu Backend)
-        if (credenciales.usuario === usuarioReal && credenciales.password === passwordReal) {
-        onLoginExitoso(); // Le avisamos a App.jsx que nos deje pasar!
-        } else {
-        setErrorAcceso('Usuario o contraseña incorrectos. Acceso denegado.');
+            if (respuesta.ok) {
+                const datosUsuario = await respuesta.json();
+                // Guardamos los datos de sesión reales del Backend
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userRole', datosUsuario.rol);
+                localStorage.setItem('userName', datosUsuario.nombre);
+                onLoginExitoso(); 
+            } else {
+                setErrorAcceso('Usuario o contraseña incorrectos. Acceso denegado.');
+            }
+        } catch (err) {
+            setErrorAcceso('No se pudo conectar con el servidor de seguridad.');
         }
     };
 
@@ -34,7 +49,6 @@ function LandingPage({ onLoginExitoso }) {
         {/* BARRA DE NAVEGACIÓN PÚBLICA */}
         <nav className="landing-nav">
             <div className="landing-logo">TechCare <span>Solutions</span></div>
-            {/* Botón discreto para los empleados */}
             <button className="btn-acceso-admin" onClick={() => setMostrarLogin(true)}>
             Portal Empleados 🔒
             </button>
@@ -51,7 +65,6 @@ function LandingPage({ onLoginExitoso }) {
             <button className="btn-hero-cta">Conoce nuestros servicios</button>
             </div>
             <div className="hero-imagen">
-            {/* Imagen ilustrativa de reparación */}
             <img src="https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=600&q=80" alt="Reparación de PC" />
             </div>
         </header>
@@ -72,7 +85,7 @@ function LandingPage({ onLoginExitoso }) {
             </div>
         </section>
 
-        {/* --- MODAL DE SEGURIDAD (LOGIN) --- */}
+        {/* --- MODAL DE SEGURIDAD (LOGIN) --- DISEÑO ORIGINAL PRESERVADO */}
         {mostrarLogin && (
             <div className="modal-overlay">
             <div className="modal-content login-modal">
@@ -83,7 +96,7 @@ function LandingPage({ onLoginExitoso }) {
                 
                 <form onSubmit={intentarLogin}>
                 <div className="form-grupo">
-                    <label>Usuario:</label>
+                    <label style={{fontSize: '14px'}}>Usuario:</label>
                     <input 
                     type="text" 
                     name="usuario" 
@@ -91,10 +104,11 @@ function LandingPage({ onLoginExitoso }) {
                     onChange={manejarInput} 
                     placeholder="Ej. admin"
                     required
+                    style={{fontSize: '14px'}}
                     />
                 </div>
                 <div className="form-grupo">
-                    <label>Contraseña:</label>
+                    <label style={{fontSize: '14px'}}>Contraseña:</label>
                     <input 
                     type="password" 
                     name="password" 
@@ -102,12 +116,15 @@ function LandingPage({ onLoginExitoso }) {
                     onChange={manejarInput} 
                     placeholder="••••••••"
                     required
+                    style={{fontSize: '14px'}}
                     />
                 </div>
                 
-                {errorAcceso && <div className="mensaje-error">{errorAcceso}</div>}
+                {errorAcceso && <div className="mensaje-error" style={{fontSize: '14px', color: '#e74c3c'}}>{errorAcceso}</div>}
 
-                <button type="submit" className="btn-login-submit">Ingresar al Sistema</button>
+                <button type="submit" className="btn-login-submit" style={{fontSize: '16px', padding: '12px'}}>
+                    Ingresar al Sistema
+                </button>
                 </form>
             </div>
             </div>

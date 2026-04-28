@@ -1,0 +1,36 @@
+.confirm-modal {
+    max-width: 400px !important;
+    text-align: center;
+    padding: 30px !important;
+}
+
+.confirm-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.confirm-modal h2 {
+    color: #1a3a5c;
+    margin-bottom: 10px;
+}
+
+.confirm-modal p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 15px;
+}
+
+.btn-confirmar {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-confirmar:hover {
+    background-color: #c0392b;
+}

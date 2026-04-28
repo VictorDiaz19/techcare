@@ -1,100 +1,85 @@
 .navbar {
-    display: flex; /* Acomodo los elementos en una fila horizontal */
-    justify-content: space-between; /* Empuja el logo a la izq. el menú al centro */
-    align-items: center; /* Centra todo de arriba hacia abajo */
-    background-color: #1a365d; /* Color de fondo */
-    color: white; /* Color de letras */
-    padding: 10px 30 px; /* 10px de espacio arriba/abajo y 30px a los lados */
+    background-color: #1a3a5c;
+    color: white;
+    padding: 0 40px;
+    height: 70px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
-/* Logo */
-.navbar-logo h2 {
-    margin: 0;
+.navbar-brand a {
+    color: white;
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: 800; /* Negritas extra */
+    letter-spacing: 2px; /* Espaciado profesional */
+    text-transform: uppercase; /* Todo en mayúsculas */
+    transition: color 0.3s;
 }
 
-/* Estilo de la lista */
+.navbar-brand a:hover {
+    color: #3498db;
+}
+
 .navbar-links {
     display: flex;
-    list-style: none; /* Elimina los puntitos de las viñetas */
-    gap: 20px; /* Crea un espacio entre cada palabra del menú */
-    margin: 0; /* Limpia los márgenes ocultos */
-    padding: 0;
+    gap: 25px;
+    height: 100%;
 }
 
 .navbar-links a {
-    color: #e2e8f0;
-    text-decoration: none; /* Quita las líneas del enlace */
-    font-weight: 500px; /* Pone las letras en negrita */
-    transition: color 0.3s ease ; /* Hace que el cambio de color al pasar el mouse sea suave, no de golpe */
+    color: #bdc3c7;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
 }
 
 .navbar-links a:hover {
-    color: #38bdf8; /* Cambia a un azul claro/celeste resaltado */
+    color: white;
 }
 
-/* Sección de usuario y botón de salir */
+.navbar-links a.active {
+    color: white;
+    border-bottom: 3px solid #3498db;
+    background: rgba(255,255,255,0.05);
+}
+
 .navbar-user {
     display: flex;
     align-items: center;
-    gap: 15px; /* Separa la el nombre del boton */
+    gap: 20px;
 }
 
-/* Diseño del boton */
+.user-info {
+    font-size: 14px;
+    color: #ecf0f1;
+    background: rgba(255,255,255,0.1);
+    padding: 8px 15px;
+    border-radius: 20px;
+}
+
 .btn-logout {
-    background-color: #e11d48; /* Fondo rojo para indicar que es una acción de "salir" */
+    background-color: #e74c3c;
     color: white;
-    border: none; /* Quita el borde que trae los botones */
-    padding: 8px 16px; /* Hace el botón más gordito (8px arriba/abajo, 16px lados) */
-    border-radius: 6px; /* Redondea las esquinas del boton */
-    cursor: pointer; /* Cambia la flechita por una manita al ponerlo encima del boton */
-    font-weight: bold;
-}
-
-/* Efecto hover del botón de salir */
-.btn-logout :hover {
-    background-color: #be123c; /* Se oscurece un poco el rojo cuando pasas el mouse */
-}
-
-/* Estilo para telefono */
-.menu-icon {
-    display: none; /* En PC se acomoda porque no se necesita */
-    font-size: 28px;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
     cursor: pointer;
-    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 0.3s;
 }
 
-/* Modo celular: Todo lo que sigue solo se aplicara al celular */
-@media (max-width: 850px) {
-    /* Muestra el icono */
-    .menu-icon {
-        display: block;
-    }
-
-    /* Lista modificada para que sea menú desplegable oculto */
-    .navbar-links {
-        display: flex;
-        flex-direction: column; /* Pone los links de arriba hacia abajo */
-        position: absolute; /* Lo saca de la barra y lo pone encima de la página */
-        top: 60px; /* Lo empueja para que quede denbajo de la barra azul */
-        left: -100%; /* Lo esconde hacía la izquierda de la pantalla */
-        width: 100%;
-        background-color: #1a365d;
-        padding: 20px 0;
-        transition: all 0.4s ease; /* Hace que deslice suavemente */
-    }
-     /* Activación del botón */
-    .navbar-links.activo {
-        left: 0; /* Lo regresa a la pantalla deslizándose */
-    }
-
-    /* Centramos los links en el modo celular */
-    .navbar-links li {
-        text-align: center;
-        margin: 15px 0;
-    }
-
-    /* Ocultamos al usuario en el celular para ahorrar espacio */
-    .navbar-user {
-        display: none;
-    }
+.btn-logout:hover {
+    background-color: #c0392b;
 }

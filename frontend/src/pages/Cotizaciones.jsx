@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Cotizaciones.css';
+import Toast from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Cotizaciones() {
     const [cotizaciones, setCotizaciones] = useState([]);
@@ -7,6 +9,8 @@ function Cotizaciones() {
     const [servicios, setServicios] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [busqueda, setBusqueda] = useState("");
+    const [notificacion, setNotificacion] = useState(null);
+    const [confirmacion, setConfirmacion] = useState(null);
 
     const API_BASE = "http://localhost:8082";
 
@@ -58,6 +62,7 @@ function Cotizaciones() {
 
     const guardarCotizacion = async () => {
         if (!formulario.clienteId || !formulario.descripcion) return alert("Cliente y descripción son obligatorios.");
+
         const payload = {
             fecha: new Date().toISOString().split('T')[0],
             equipoCotiz: formulario.descripcion,
@@ -67,43 +72,71 @@ function Cotizaciones() {
             cliente: { id_cliente: parseInt(formulario.clienteId) },
             servicio: formulario.servicioId ? { id_servicio: parseInt(formulario.servicioId) } : null
         };
+
         if (modoEdicion) payload.id_cotizacion = idEditando;
+
         try {
             const url = modoEdicion ? `${API_BASE}/cotizaciones/${idEditando}` : `${API_BASE}/cotizaciones`;
             const metodo = modoEdicion ? 'PUT' : 'POST';
+            
             const res = await fetch(url, {
                 method: metodo,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (res.ok) { await cargarDatos(); setModalAbierto(false); }
-        } catch (error) { console.error(error); }
-    };
-
-    const eliminarCotizacion = async (id) => {
-        if (window.confirm("¿Eliminar cotización?")) {
-            await fetch(`${API_BASE}/cotizaciones/${id}`, { method: 'DELETE' });
-            cargarDatos();
+            if (res.ok) { 
+                await cargarDatos(); 
+                setModalAbierto(false); 
+                setNotificacion({ mensaje: `Cotización ${modoEdicion ? 'actualizada' : 'registrada'} con éxito`, tipo: 'success' });
+            } else {
+                setNotificacion({ mensaje: "Error al guardar cotización", tipo: 'error' });
+            }
+        } catch (error) { 
+            setNotificacion({ mensaje: "Error de conexión", tipo: 'error' });
         }
     };
 
-    // BUSQUEDA INTELIGENTE PARA COTIZACIONES
+    const solicitarEliminar = (id) => {
+        setConfirmacion({
+            mensaje: "¿Estás seguro de que deseas eliminar esta cotización?",
+            onConfirm: () => ejecutarEliminacion(id)
+        });
+    };
+
+    const ejecutarEliminacion = async (id) => {
+        try {
+            const res = await fetch(`${API_BASE}/cotizaciones/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                await cargarDatos();
+                setNotificacion({ mensaje: "Cotización eliminada correctamente", tipo: 'success' });
+            } else {
+                setNotificacion({ mensaje: "No se pudo eliminar la cotización", tipo: 'error' });
+            }
+        } catch (error) {
+            setNotificacion({ mensaje: "Error de conexión", tipo: 'error' });
+        } finally {
+            setConfirmacion(null);
+        }
+    };
+
     const filtradas = cotizaciones.filter(c => {
         const query = busqueda.toLowerCase().trim();
         const idOriginal = c.id_cotizacion || c.ID_cotizacion;
         const folioFormateado = `cot-${String(idOriginal).padStart(4, '0')}`.toLowerCase();
         const clienteNom = (c.cliente?.nombreCli || "").toLowerCase();
         const idSimple = String(idOriginal).toLowerCase();
-
         return clienteNom.includes(query) || folioFormateado.includes(query) || idSimple.includes(query);
     });
 
     return (
         <div className="cotizaciones-container">
+            {notificacion && <Toast {...notificacion} onClose={() => setNotificacion(null)} />}
+            {confirmacion && <ConfirmModal {...confirmacion} onCancel={() => setConfirmacion(null)} />}
+
             <div className="cotizaciones-header">
                 <h1>GESTOR DE COTIZACIONES</h1>
                 <div className="header-acciones">
-                    <input type="text" placeholder="Buscar por folio (COT-0001) o cliente..." className="input-buscador" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+                    <input type="text" placeholder="Buscar por folio o cliente..." className="input-buscador" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
                     <button className="btn-nueva-coti" onClick={abrirModalCrear}>+ NUEVA COTIZACIÓN</button>
                 </div>
             </div>
@@ -123,7 +156,7 @@ function Cotizaciones() {
                                     <td>${parseFloat(c.total || c.Total || 0).toFixed(2)}</td>
                                     <td className="acciones-celda">
                                         <button className="btn-editar" onClick={() => abrirModalEditar(c)} title="Editar">✏️</button>
-                                        <button className="btn-eliminar" onClick={() => eliminarCotizacion(c.id_cotizacion || c.ID_cotizacion)}>🗑️</button>
+                                        <button className="btn-eliminar" onClick={() => solicitarEliminar(c.id_cotizacion || c.ID_cotizacion)}>🗑️</button>
                                     </td>
                                 </tr>
                             ))}

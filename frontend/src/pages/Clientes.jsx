@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './Clientes.css';
+import Toast from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Clientes() {
     const [clientes, setClientes] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [busqueda, setBusqueda] = useState("");
+    const [notificacion, setNotificacion] = useState(null);
+    const [confirmacion, setConfirmacion] = useState(null);
 
     const API_URL = "http://localhost:8082/clientes";
 
@@ -25,6 +29,7 @@ function Clientes() {
     const [modalAbierto, setModalAbierto] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
     const [idEditando, setIdEditando] = useState(null);
+
     const [formulario, setFormulario] = useState({ nombreCli: '', telefono: '', email: '', direccion: '' });
 
     const manejarInput = (e) => setFormulario({ ...formulario, [e.target.name]: e.target.value });
@@ -38,29 +43,53 @@ function Clientes() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formulario)
             });
-            if (res.ok) { await cargarClientes(); setModalAbierto(false); }
-        } catch (error) { console.error(error); }
+            if (res.ok) { 
+                await cargarClientes(); 
+                setModalAbierto(false); 
+                setNotificacion({ mensaje: `Cliente ${modoEdicion ? 'actualizado' : 'registrado'} con éxito`, tipo: 'success' });
+            } else {
+                setNotificacion({ mensaje: "Error al guardar cliente", tipo: 'error' });
+            }
+        } catch (error) { 
+            setNotificacion({ mensaje: "Error de conexión", tipo: 'error' });
+        }
     };
 
-    const eliminarCliente = async (id) => {
-        if (window.confirm("¿Eliminar cliente?")) {
-            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-            cargarClientes();
+    const solicitarEliminar = (id) => {
+        setConfirmacion({
+            mensaje: "¿Estás seguro de que deseas eliminar este cliente? Se borrarán sus datos permanentemente.",
+            onConfirm: () => ejecutarEliminacion(id)
+        });
+    };
+
+    const ejecutarEliminacion = async (id) => {
+        try {
+            const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                await cargarClientes();
+                setNotificacion({ mensaje: "Cliente eliminado correctamente", tipo: 'success' });
+            } else {
+                setNotificacion({ mensaje: "No se pudo eliminar al cliente", tipo: 'error' });
+            }
+        } catch (error) {
+            setNotificacion({ mensaje: "Error de conexión", tipo: 'error' });
+        } finally {
+            setConfirmacion(null);
         }
     };
 
     const imprimirFicha = (id) => window.open(`http://localhost:8082/pdf/clientes/${id}`, '_blank');
 
-    // BUSQUEDA MEJORADA (FOLIO Y NOMBRE)
-    const filtrados = clientes.filter(c => {
-        const query = busqueda.toLowerCase().trim();
-        const id = String(c.id_cliente || c.ID_cliente || "").toLowerCase();
-        const nombre = (c.nombreCli || "").toLowerCase();
-        return nombre.includes(query) || id.includes(query);
-    });
+    const filtrados = clientes.filter(c => 
+        (c.nombreCli || "").toLowerCase().includes(busqueda.toLowerCase()) ||
+        String(c.id_cliente || c.ID_cliente || "").includes(busqueda)
+    );
 
     return (
         <div className="clientes-container">
+            {notificacion && <Toast {...notificacion} onClose={() => setNotificacion(null)} />}
+            {confirmacion && <ConfirmModal {...confirmacion} onCancel={() => setConfirmacion(null)} />}
+
             <div className="clientes-header">
                 <h1>DIRECTORIO DE CLIENTES</h1>
                 <div className="header-acciones">
@@ -68,11 +97,19 @@ function Clientes() {
                     <button className="btn-nuevo-cliente" onClick={() => { setModoEdicion(false); setFormulario({nombreCli:'', telefono:'', email:'', direccion:''}); setModalAbierto(true); }}>+ NUEVO CLIENTE</button>
                 </div>
             </div>
+
             <div className="tabla-container">
                 {cargando ? <p style={{textAlign:'center'}}>Cargando...</p> : (
                     <table className="tabla-clientes">
                         <thead>
-                            <tr><th>ID</th><th>Nombre</th><th>Contacto</th><th>Miembro desde</th><th>Acciones</th></tr>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Contacto</th>
+                                <th>Dirección</th>
+                                <th>Miembro desde</th>
+                                <th>Acciones</th>
+                            </tr>
                         </thead>
                         <tbody>
                             {filtrados.map(c => (
@@ -80,11 +117,12 @@ function Clientes() {
                                     <td>{c.id_cliente || c.ID_cliente}</td>
                                     <td><strong>{c.nombreCli}</strong></td>
                                     <td>{c.telefono}<br/>{c.email}</td>
+                                    <td>{c.direccion || 'Sin dirección'}</td>
                                     <td>{c.fechaRegistro || 'Reciente'}</td>
                                     <td className="acciones-celda">
                                         <button className="btn-editar" onClick={() => imprimirFicha(c.id_cliente || c.ID_cliente)} title="Ficha">📑</button>
                                         <button className="btn-editar" onClick={() => { setModoEdicion(true); setIdEditando(c.id_cliente || c.ID_cliente); setFormulario(c); setModalAbierto(true); }} title="Editar">✏️</button>
-                                        <button className="btn-eliminar" onClick={() => eliminarCliente(c.id_cliente || c.ID_cliente)}>🗑️</button>
+                                        <button className="btn-eliminar" onClick={() => solicitarEliminar(c.id_cliente || c.ID_cliente)}>🗑️</button>
                                     </td>
                                 </tr>
                             ))}
@@ -92,6 +130,7 @@ function Clientes() {
                     </table>
                 )}
             </div>
+
             {modalAbierto && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -101,6 +140,7 @@ function Clientes() {
                             <div className="form-grupo"><label>Teléfono:</label><input type="text" name="telefono" value={formulario.telefono} onChange={manejarInput} /></div>
                             <div className="form-grupo"><label>Email:</label><input type="email" name="email" value={formulario.email} onChange={manejarInput} /></div>
                         </div>
+                        <div className="form-grupo"><label>Dirección:</label><input type="text" name="direccion" value={formulario.direccion} onChange={manejarInput} /></div>
                         <div className="modal-botones"><button className="btn-guardar" onClick={guardarCliente}>Guardar</button><button className="btn-cancelar" onClick={() => setModalAbierto(false)}>Cancelar</button></div>
                     </div>
                 </div>
